@@ -70,3 +70,44 @@
   @apply hover:text-[#7631f9];
 }
 
+/* Custom styles for Shepherd tutorial */
+.shepherd-theme-custom {
+  @apply rounded-lg shadow-lg;
+}
+
+.shepherd-theme-custom .shepherd-content {
+  @apply rounded-lg overflow-hidden;
+}
+
+.shepherd-theme-custom .shepherd-header {
+  @apply bg-[#7631f9] text-white p-4;
+}
+
+.shepherd-theme-custom .shepherd-title {
+  @apply text-lg font-semibold;
+}
+
+.shepherd-theme-custom .shepherd-text {
+  @apply p-4 text-gray-700;
+}
+
+.shepherd-theme-custom .shepherd-footer {
+  @apply px-4 py-3 bg-gray-50 border-t border-gray-200;
+}
+
+.shepherd-theme-custom .shepherd-button {
+  @apply rounded-md px-4 py-2 text-sm font-medium transition-colors;
+}
+
+.shepherd-theme-custom .shepherd-button-secondary {
+  @apply bg-white text-gray-500 border border-gray-300 hover:bg-gray-50;
+}
+
+.shepherd-theme-custom .shepherd-button-primary {
+  @apply bg-[#7631f9] text-white hover:bg-[#9156ff];
+}
+
+.shepherd-theme-custom .shepherd-cancel-icon {
+  @apply text-white opacity-70 hover:opacity-100;
+}
+
