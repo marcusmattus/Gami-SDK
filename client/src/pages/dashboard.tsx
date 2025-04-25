@@ -10,6 +10,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTutorial } from "@/hooks/use-tutorial";
 import { 
   FaUsers, 
   FaTrophy, 
@@ -39,6 +40,7 @@ interface WalletProvider {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { startTutorial, forceStartTutorial, hasSeenTutorial } = useTutorial('dashboard');
   
   // Fetch dashboard stats
   const { data: stats, isLoading: isLoadingStats } = useQuery<DashboardStats>({
@@ -54,6 +56,19 @@ export default function Dashboard() {
   const { data: wallets, isLoading: isLoadingWallets, refetch: refetchWallets } = useQuery<WalletProvider[]>({
     queryKey: ['/api/admin/wallet-integrations'],
   });
+  
+  // Start the tutorial when the component mounts
+  useEffect(() => {
+    // Wait for data to be loaded before starting the tutorial
+    if (!isLoadingStats && !isLoadingEvents && !isLoadingWallets) {
+      // Use a slight delay to ensure DOM elements are fully rendered
+      const timer = setTimeout(() => {
+        startTutorial();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingStats, isLoadingEvents, isLoadingWallets, startTutorial]);
 
   // API services status
   const apiServices = [
@@ -81,7 +96,7 @@ export default function Dashboard() {
     <Layout>
       <div className="max-w-7xl mx-auto">
         {/* Page header */}
-        <div className="md:flex md:items-center md:justify-between mb-8">
+        <div className="md:flex md:items-center md:justify-between mb-8 dashboard-overview">
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">
               Dashboard
@@ -92,7 +107,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
             <Button variant="outline">Documentation</Button>
-            <Button>Deploy SDK</Button>
+            <Button onClick={() => forceStartTutorial()}>Help Guide</Button>
           </div>
         </div>
 
@@ -131,7 +146,7 @@ export default function Dashboard() {
         {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* SDK Integration Column */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 projects-list">
             <SDKIntegration
               sdkVersion="1.2.4"
               apiKey={isLoadingStats ? "loading..." : "gami_0123456789abcdef"}
@@ -153,7 +168,7 @@ export default function Dashboard() {
               isLoading={isLoadingWallets}
             />
             
-            <QuickActions />
+            <QuickActions className="quick-actions" />
           </div>
         </div>
       </div>

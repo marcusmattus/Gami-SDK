@@ -18,7 +18,8 @@ type TutorialType = 'dashboard' | 'sdk-config' | 'xp-management' | 'wallet-integ
 
 export function useTutorial(tutorialType: TutorialType) {
   const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
-  const shepherd = useShepherd();
+  // Cast to our custom interface to access all the methods we need
+  const shepherd = useShepherd() as unknown as ShepherdInstance;
 
   // Function to save that the user has seen the tutorial
   const markTutorialAsSeen = () => {
