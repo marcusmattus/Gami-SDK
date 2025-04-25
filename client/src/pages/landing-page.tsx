@@ -5,6 +5,8 @@ import {
   BarChart3, 
   Code2, 
   Medal, 
+  PuzzleIcon,
+  StarIcon,
   Wallet, 
   ZapIcon, 
   LucideGitCompare
@@ -18,8 +20,15 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-6">
             <Link href="/">
-              <div className="flex items-center gap-2 font-bold text-xl text-purple-600 cursor-pointer">
-                <ZapIcon className="h-5 w-5" />
+              <div className="flex items-center gap-2 font-bold text-xl text-black cursor-pointer">
+                <div className="flex">
+                  <div className="bg-[#7631f9] w-8 h-8 rounded-full flex items-center justify-center mr-[-0.5rem] relative z-10">
+                    <StarIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-[#9156ff] w-8 h-8 rounded-full flex items-center justify-center">
+                    <PuzzleIcon className="h-4 w-4 text-white" />
+                  </div>
+                </div>
                 <span>Gami Protocol</span>
               </div>
             </Link>
@@ -265,8 +274,15 @@ await gami.createRewardDistribution({
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div className="md:w-1/3">
-              <div className="flex items-center gap-2 font-bold text-lg text-purple-600 mb-4">
-                <ZapIcon className="h-5 w-5" />
+              <div className="flex items-center gap-2 font-bold text-lg text-black mb-4">
+                <div className="flex">
+                  <div className="bg-[#7631f9] w-6 h-6 rounded-full flex items-center justify-center mr-[-0.35rem] relative z-10">
+                    <StarIcon className="h-3 w-3 text-white" />
+                  </div>
+                  <div className="bg-[#9156ff] w-6 h-6 rounded-full flex items-center justify-center">
+                    <PuzzleIcon className="h-3 w-3 text-white" />
+                  </div>
+                </div>
                 <span>Gami Protocol</span>
               </div>
               <p className="text-muted-foreground mb-6">
@@ -278,19 +294,19 @@ await gami.createRewardDistribution({
               <div>
                 <h4 className="font-medium mb-4">Product</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Features</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Pricing</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">SDK</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">API</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Features</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Pricing</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">SDK</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">API</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium mb-4">Resources</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Documentation</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Guides</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Examples</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Blog</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Documentation</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Guides</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Examples</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Blog</a></li>
                 </ul>
               </div>
               <div>
