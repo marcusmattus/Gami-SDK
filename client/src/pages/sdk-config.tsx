@@ -19,7 +19,8 @@ import {
   FormLabel 
 } from "@/components/ui/form";
 import { FaCopy, FaKey, FaGlobe, FaBug, FaCode, FaStream } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTutorial } from "@/hooks/use-tutorial";
 
 const apiConfigSchema = z.object({
   apiKey: z.string().min(1, "API key is required"),
@@ -35,6 +36,16 @@ type ApiConfigFormValues = z.infer<typeof apiConfigSchema>;
 export default function SdkConfig() {
   const { toast } = useToast();
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
+  const { startTutorial, forceStartTutorial } = useTutorial('sdk-config');
+  
+  // Start the tutorial when the component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startTutorial();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [startTutorial]);
 
   const defaultValues: ApiConfigFormValues = {
     apiKey: "gami_3f8a9bc67d1234e5f6gh789ij0k1l2m3",
@@ -96,11 +107,27 @@ export default function SdkConfig() {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto pb-10">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">SDK Configuration</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage your SDK configuration and API keys
-          </p>
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">SDK Configuration</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Manage your SDK configuration and API keys
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Button 
+              variant="outline" 
+              onClick={() => forceStartTutorial()}
+              className="flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              Show Guide
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="general">
@@ -111,14 +138,14 @@ export default function SdkConfig() {
           </TabsList>
           
           <TabsContent value="general">
-            <Card>
+            <Card className="sdk-section">
               <CardHeader>
                 <CardTitle>API Configuration</CardTitle>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="bg-slate-50 rounded-lg p-4 flex items-center justify-between">
+                    <div className="bg-slate-50 rounded-lg p-4 flex items-center justify-between api-key-section">
                       <div>
                         <Label htmlFor="apiKey" className="font-medium text-sm">API Key</Label>
                         <div className="mt-1 flex items-center gap-2">
@@ -230,6 +257,29 @@ export default function SdkConfig() {
                         </FormItem>
                       )}
                     />
+                    
+                    <div className="installation-guide bg-slate-50 p-4 rounded-lg">
+                      <h3 className="font-medium text-sm mb-2">Installation Guide</h3>
+                      <pre className="text-xs bg-slate-100 p-3 rounded overflow-x-auto">
+                        <code>{`// Install using npm
+npm install @gami-protocol/sdk
+
+// Initialize in your application
+import { GamiSDK } from '@gami-protocol/sdk';
+
+const gami = new GamiSDK({
+  apiKey: '${form.watch("apiKey")}',
+  environment: '${form.watch("environment")}'
+});
+
+// Track events
+gami.trackEvent('user_action', {
+  userId: 'user-123',
+  points: 50,
+  actionType: 'completed_task'
+});`}</code>
+                      </pre>
+                    </div>
 
                     <Button type="submit">Save Configuration</Button>
                   </form>
