@@ -61,3 +61,12 @@
   }
 }
 
+/* Custom styles for Tabs */
+.tabs-list [data-state="active"] {
+  @apply bg-[#7631f9] text-white;
+}
+
+.tabs-list [data-state="inactive"] {
+  @apply hover:text-[#7631f9];
+}
+

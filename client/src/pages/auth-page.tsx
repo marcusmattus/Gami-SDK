@@ -118,7 +118,7 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">XP & Achievement Tracking</h3>
-                  <p className="text-sm text-primary-100">Design custom XP systems and achievement criteria</p>
+                  <p className="text-sm text-purple-100">Design custom XP systems and achievement criteria</p>
                 </div>
               </div>
               
@@ -128,7 +128,7 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Reward Campaigns</h3>
-                  <p className="text-sm text-primary-100">Create time-limited engagement campaigns with rewards</p>
+                  <p className="text-sm text-purple-100">Create time-limited engagement campaigns with rewards</p>
                 </div>
               </div>
               
@@ -138,7 +138,7 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Token Rewards</h3>
-                  <p className="text-sm text-primary-100">Distribute GAMI tokens as rewards on the Solana blockchain</p>
+                  <p className="text-sm text-purple-100">Distribute GAMI tokens as rewards on the Solana blockchain</p>
                 </div>
               </div>
             </div>
@@ -154,7 +154,7 @@ export default function AuthPage() {
               onValueChange={(value) => setActiveTab(value as "login" | "register")}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsList className="grid w-full grid-cols-2 mb-8 tabs-list">
                 <TabsTrigger value="login">Log In</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
@@ -210,7 +210,7 @@ export default function AuthPage() {
                     <Button 
                       variant="link" 
                       onClick={() => setActiveTab("register")}
-                      className="text-sm"
+                      className="text-sm text-[#7631f9] hover:text-[#9156ff]"
                     >
                       Don't have an account? Sign up
                     </Button>
@@ -300,7 +300,7 @@ export default function AuthPage() {
                     <Button 
                       variant="link" 
                       onClick={() => setActiveTab("login")}
-                      className="text-sm"
+                      className="text-sm text-[#7631f9] hover:text-[#9156ff]"
                     >
                       Already have an account? Log in
                     </Button>
