@@ -36,7 +36,7 @@ export default function AuthPage() {
 
   // Redirect if user is already logged in
   if (user) {
-    navigate("/");
+    navigate("/dashboard");
     return null;
   }
 

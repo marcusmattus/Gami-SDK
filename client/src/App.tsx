@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,11 +15,15 @@ import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
+import LandingPage from "@/pages/landing-page";
 
 function Router() {
+  const [location] = useLocation();
+  
   return (
     <Switch>
-      <ProtectedRoute path="/" component={Dashboard} />
+      <Route path="/" component={LandingPage} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/sdk-config" component={SdkConfig} />
       <ProtectedRoute path="/xp-management" component={XPManagement} />
       <ProtectedRoute path="/wallet-integration" component={WalletIntegration} />
@@ -34,12 +39,14 @@ function Router() {
 
 function App() {
   return (
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
