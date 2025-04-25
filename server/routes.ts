@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { trackEventSchema, connectWalletSchema } from "@shared/schema";
@@ -6,37 +6,102 @@ import express from "express";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { setupAuth, generateApiKey } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  const { requireAuth, apiKeyAuth } = setupAuth(app);
+  
   // API routes
   const apiRouter = express.Router();
   
-  // Authentication middleware to verify API key
-  const apiKeyAuth = async (req: Request, res: Response, next: Function) => {
-    const apiKey = req.headers["x-api-key"] as string;
-    
-    if (!apiKey) {
-      return res.status(401).json({ error: "API key is required" });
-    }
-    
+  // User routes for authentication (handled by setupAuth)
+  
+  // User's projects
+  apiRouter.get("/projects", requireAuth, async (req: Request, res: Response) => {
     try {
-      const project = await storage.getProjectByApiKey(apiKey);
+      const user = req.user;
+      const projects = await storage.getProjectsByOwnerId(user.id);
       
-      if (!project) {
-        return res.status(401).json({ error: "Invalid API key" });
-      }
+      // Don't send sensitive data like API keys
+      const safeProjects = projects.map(project => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        status: project.status,
+        environment: project.environment,
+        createdAt: project.createdAt
+      }));
       
-      if (project.status !== "active") {
-        return res.status(403).json({ error: "Project is not active" });
-      }
-      
-      // Add project to request for use in route handlers
-      (req as any).project = project;
-      next();
+      res.status(200).json(safeProjects);
     } catch (error) {
-      res.status(500).json({ error: "Error authenticating API key" });
+      res.status(500).json({ error: "Error fetching projects" });
     }
-  };
+  });
+  
+  // Get project API keys (only for authenticated users)
+  apiRouter.get("/projects/:id/keys", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+      
+      const user = req.user;
+      
+      // Verify the project belongs to the user
+      const project = await storage.getProject(projectId);
+      if (!project || project.ownerId !== user.id) {
+        return res.status(403).json({ error: "You do not have access to this project" });
+      }
+      
+      res.status(200).json({
+        apiKey: project.apiKey
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error fetching API key" });
+    }
+  });
+  
+  // Create a new project (for authenticated users)
+  apiRouter.post("/projects", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const projectSchema = z.object({
+        name: z.string().min(3).max(100),
+        description: z.string().optional(),
+        environment: z.enum(["development", "production"]).default("development")
+      });
+      
+      const data = projectSchema.parse(req.body);
+      const user = req.user;
+      
+      // Generate a new API key
+      const apiKey = generateApiKey();
+      
+      const project = await storage.createProject({
+        ownerId: user.id,
+        name: data.name,
+        apiKey,
+        description: data.description || null,
+        environment: data.environment,
+        status: "active"
+      });
+      
+      // Don't return the API key in the response
+      const { apiKey: _, ...safeProject } = project;
+      
+      res.status(201).json(safeProject);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error creating project" });
+    }
+  });
+  
+  // We're using the apiKeyAuth middleware from setupAuth
   
   // SDK API endpoints
   

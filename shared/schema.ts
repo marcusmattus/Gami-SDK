@@ -16,6 +16,7 @@ export const projects = pgTable("projects", {
   name: text("name").notNull(),
   apiKey: text("api_key").notNull().unique(),
   ownerId: integer("owner_id").notNull().references(() => users.id),
+  description: text("description"),
   status: text("status").notNull().default("active"), // active, inactive
   environment: text("environment").notNull().default("development"), // development, production
   createdAt: timestamp("created_at").defaultNow(),
