@@ -25,7 +25,7 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Desktop sidebar */}
-      <Sidebar className="hidden md:flex" />
+      <Sidebar className="hidden md:flex sidebar-nav" />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">

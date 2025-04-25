@@ -14,7 +14,11 @@ interface QuickAction {
   href: string;
 }
 
-export default function QuickActions() {
+interface QuickActionsProps {
+  className?: string;
+}
+
+export default function QuickActions({ className }: QuickActionsProps) {
   const actions: QuickAction[] = [
     {
       icon: <FaPlusCircle className="mr-3 text-primary-500" />,
@@ -44,7 +48,7 @@ export default function QuickActions() {
   ];
 
   return (
-    <Card>
+    <Card className={className}>
       <div className="px-5 py-4 border-b border-slate-100">
         <h3 className="text-lg font-medium text-slate-900">Quick Actions</h3>
       </div>
