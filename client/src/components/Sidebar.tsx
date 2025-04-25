@@ -41,9 +41,9 @@ export default function Sidebar({ className }: SidebarProps) {
         <div className="space-y-1">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <a
+              <div
                 className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-pointer",
                   location === link.href
                     ? "bg-primary-50 text-primary-700"
                     : "text-slate-700 hover:bg-slate-100"
@@ -51,7 +51,7 @@ export default function Sidebar({ className }: SidebarProps) {
               >
                 <span className="w-6">{link.icon}</span>
                 <span>{link.label}</span>
-              </a>
+              </div>
             </Link>
           ))}
         </div>
