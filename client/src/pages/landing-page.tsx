@@ -312,10 +312,10 @@ await gami.createRewardDistribution({
               <div>
                 <h4 className="font-medium mb-4">Company</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">About</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Contact</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Privacy</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary">Terms</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">About</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Contact</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Privacy</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-[#7631f9]">Terms</a></li>
                 </ul>
               </div>
             </div>
