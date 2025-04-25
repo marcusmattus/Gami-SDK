@@ -18,20 +18,20 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-6">
             <Link href="/">
-              <a className="flex items-center gap-2 font-bold text-xl text-primary">
+              <div className="flex items-center gap-2 font-bold text-xl text-purple-600 cursor-pointer">
                 <ZapIcon className="h-5 w-5" />
                 <span>Gami Protocol</span>
-              </a>
+              </div>
             </Link>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/auth">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition">
+              <div className="text-sm font-medium text-muted-foreground hover:text-purple-600 transition cursor-pointer">
                 Log In
-              </a>
+              </div>
             </Link>
             <Link href="/auth?tab=register">
-              <Button size="sm">Get Started</Button>
+              <Button size="sm" className="bg-purple-600 hover:bg-purple-700">Get Started</Button>
             </Link>
           </div>
         </div>
@@ -41,7 +41,7 @@ export default function LandingPage() {
       <section className="bg-gradient-to-b from-white to-slate-50 py-20 md:py-32">
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex flex-col items-center text-center">
-            <h1 className="text-4xl md:text-6xl font-bold max-w-3xl leading-tight bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold max-w-3xl leading-tight bg-gradient-to-r from-purple-700 to-purple-500 bg-clip-text text-transparent">
               Blockchain-Based Gamification For Your Application
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
@@ -50,12 +50,12 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-10">
               <Link href="/auth?tab=register">
-                <Button size="lg" className="gap-2">
+                <Button size="lg" className="gap-2 bg-purple-600 hover:bg-purple-700">
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/documentation">
-                <Button size="lg" variant="outline" className="gap-2">
+                <Button size="lg" variant="outline" className="gap-2 text-purple-600 border-purple-600 hover:bg-purple-50">
                   Documentation <Code2 className="h-4 w-4" />
                 </Button>
               </Link>
@@ -76,8 +76,8 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="bg-slate-50 border border-border rounded-lg p-6 hover:shadow-md transition">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-5">
-                <ZapIcon className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-5">
+                <ZapIcon className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="text-xl font-medium mb-2">XP System</h3>
               <p className="text-muted-foreground">
@@ -86,8 +86,8 @@ export default function LandingPage() {
             </div>
 
             <div className="bg-slate-50 border border-border rounded-lg p-6 hover:shadow-md transition">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-5">
-                <Medal className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-5">
+                <Medal className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="text-xl font-medium mb-2">Achievements</h3>
               <p className="text-muted-foreground">
@@ -96,8 +96,8 @@ export default function LandingPage() {
             </div>
 
             <div className="bg-slate-50 border border-border rounded-lg p-6 hover:shadow-md transition">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-5">
-                <Wallet className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-5">
+                <Wallet className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="text-xl font-medium mb-2">Token Rewards</h3>
               <p className="text-muted-foreground">
@@ -106,8 +106,8 @@ export default function LandingPage() {
             </div>
 
             <div className="bg-slate-50 border border-border rounded-lg p-6 hover:shadow-md transition">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-5">
-                <BarChart3 className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-5">
+                <BarChart3 className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="text-xl font-medium mb-2">Analytics</h3>
               <p className="text-muted-foreground">
@@ -131,7 +131,7 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 gap-12">
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
                   1
                 </div>
                 <div>
@@ -163,7 +163,7 @@ export default function LandingPage() {
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
                   2
                 </div>
                 <div>
@@ -189,7 +189,7 @@ const gami = new GamiSDK({
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
                   3
                 </div>
                 <div>
@@ -214,7 +214,7 @@ gami.trackEvent({
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg">
                   4
                 </div>
                 <div>
@@ -245,15 +245,15 @@ await gami.createRewardDistribution({
       </section>
 
       {/* Get Started CTA */}
-      <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-400 text-white">
+      <section className="py-20 bg-gradient-to-r from-purple-700 to-purple-500 text-white">
         <div className="container mx-auto px-4 md:px-8 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Boost User Engagement?</h2>
-          <p className="text-lg text-primary-100 max-w-2xl mx-auto mb-10">
+          <p className="text-lg text-purple-100 max-w-2xl mx-auto mb-10">
             Start integrating blockchain-based gamification into your application today.
             No blockchain experience required.
           </p>
           <Link href="/auth?tab=register">
-            <Button size="lg" variant="secondary" className="gap-2">
+            <Button size="lg" variant="secondary" className="gap-2 bg-white text-purple-700 hover:bg-purple-50">
               Create Your Free Account <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -265,7 +265,7 @@ await gami.createRewardDistribution({
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex flex-col md:flex-row justify-between gap-8">
             <div className="md:w-1/3">
-              <div className="flex items-center gap-2 font-bold text-lg text-primary mb-4">
+              <div className="flex items-center gap-2 font-bold text-lg text-purple-600 mb-4">
                 <ZapIcon className="h-5 w-5" />
                 <span>Gami Protocol</span>
               </div>
