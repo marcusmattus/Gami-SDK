@@ -10,8 +10,19 @@ interface ShepherdInstance {
   back: () => void;
   complete: () => void;
   isActive: boolean;
-  addSteps: (steps: any[]) => void;
   start: () => void;
+  tour?: {
+    options: {
+      defaultStepOptions: {
+        classes: string;
+        scrollTo: boolean;
+        cancelIcon: {
+          enabled: boolean;
+        };
+      };
+      steps: any[];
+    };
+  };
 }
 
 type TutorialType = 'dashboard' | 'sdk-config' | 'xp-management' | 'wallet-integration' | 'campaigns' | 'analytics';
@@ -450,9 +461,25 @@ export function useTutorial(tutorialType: TutorialType) {
     if (shepherd.isActive) {
       shepherd.cancel();
     }
-
-    shepherd.addSteps(getTutorialSteps());
-    shepherd.start();
+    
+    // Get the tutorial steps
+    const steps = getTutorialSteps();
+    
+    // With react-shepherd, we need to add steps directly to the tour options
+    // before starting the tour instead of using addSteps
+    if (steps.length > 0 && shepherd) {
+      if (shepherd.tour) {
+        shepherd.tour.options.defaultStepOptions = {
+          classes: 'shepherd-theme-default gami-tutorial-step',
+          scrollTo: true,
+          cancelIcon: {
+            enabled: true
+          }
+        };
+        shepherd.tour.options.steps = steps;
+        shepherd.start();
+      }
+    }
   };
 
   // Force start the tutorial even if the user has seen it before
@@ -460,9 +487,25 @@ export function useTutorial(tutorialType: TutorialType) {
     if (shepherd.isActive) {
       shepherd.cancel();
     }
-
-    shepherd.addSteps(getTutorialSteps());
-    shepherd.start();
+    
+    // Get the tutorial steps
+    const steps = getTutorialSteps();
+    
+    // With react-shepherd, we need to add steps directly to the tour options
+    // before starting the tour instead of using addSteps
+    if (steps.length > 0 && shepherd) {
+      if (shepherd.tour) {
+        shepherd.tour.options.defaultStepOptions = {
+          classes: 'shepherd-theme-default gami-tutorial-step',
+          scrollTo: true,
+          cancelIcon: {
+            enabled: true
+          }
+        };
+        shepherd.tour.options.steps = steps;
+        shepherd.start();
+      }
+    }
   };
 
   return { startTutorial, forceStartTutorial, hasSeenTutorial };
