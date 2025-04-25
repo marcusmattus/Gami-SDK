@@ -186,6 +186,298 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get wallet token balances
+  apiRouter.post("/wallet/balances", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const balanceSchema = z.object({
+        publicKey: z.string(),
+        chainType: z.enum(['solana', 'ethereum', 'polygon', 'avalanche', 'bsc', 'fantom'])
+      });
+      
+      const data = balanceSchema.parse(req.body);
+      
+      // In a real implementation, this would fetch actual token balances from the blockchain
+      // For now, return mock data based on the chain type
+      let balances = [];
+      
+      switch (data.chainType) {
+        case 'solana':
+          balances = [
+            { token: 'SOL', amount: 1.25, usdValue: 125.00 },
+            { token: 'GAMI', amount: 500, usdValue: 50.00 },
+          ];
+          break;
+        case 'ethereum':
+          balances = [
+            { token: 'ETH', amount: 0.5, usdValue: 1000.00 },
+            { token: 'GAMI', amount: 300, usdValue: 30.00 },
+          ];
+          break;
+        default:
+          balances = [
+            { token: data.chainType.toUpperCase(), amount: 10, usdValue: 100.00 },
+            { token: 'GAMI', amount: 200, usdValue: 20.00 },
+          ];
+      }
+      
+      res.status(200).json({ success: true, balances });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error fetching wallet balances" });
+    }
+  });
+  
+  // Send a transaction
+  apiRouter.post("/transaction", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const txSchema = z.object({
+        fromPublicKey: z.string(),
+        chainType: z.enum(['solana', 'ethereum', 'polygon', 'avalanche', 'bsc', 'fantom']),
+        toAddress: z.string(),
+        amount: z.number().positive(),
+        token: z.string().optional(),
+        memo: z.string().optional()
+      });
+      
+      const data = txSchema.parse(req.body);
+      
+      // Generate a mock transaction hash
+      const txHash = `tx_${data.chainType}_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      
+      // In a real implementation, this would create and send a transaction on the specified blockchain
+      res.status(200).json({
+        success: true,
+        txHash,
+        amount: data.amount,
+        token: data.token || data.chainType.toUpperCase(),
+        timestamp: new Date()
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error creating transaction" });
+    }
+  });
+  
+  // Send a Solana transaction (special handler for Solana)
+  apiRouter.post("/solana/transaction", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const txSchema = z.object({
+        fromPublicKey: z.string(),
+        toAddress: z.string(),
+        amount: z.number().positive(),
+        token: z.string().optional(),
+        memo: z.string().optional()
+      });
+      
+      const data = txSchema.parse(req.body);
+      
+      // Generate a mock Solana transaction hash
+      const txHash = `sol_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      
+      // In a real implementation, this would create a Solana transaction using web3.js
+      res.status(200).json({
+        success: true,
+        txHash,
+        token: data.token || 'SOL',
+        amount: data.amount,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error creating Solana transaction" });
+    }
+  });
+  
+  // Cross-chain transfer
+  apiRouter.post("/cross-chain/transfer", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const transferSchema = z.object({
+        fromChain: z.enum(['solana', 'ethereum', 'polygon', 'avalanche', 'bsc', 'fantom']),
+        toChain: z.enum(['solana', 'ethereum', 'polygon', 'avalanche', 'bsc', 'fantom']),
+        amount: z.number().positive(),
+        tokenAddress: z.string(),
+        destinationAddress: z.string(),
+        walletPublicKey: z.string()
+      });
+      
+      const data = transferSchema.parse(req.body);
+      
+      // Generate a mock transfer ID and transaction hash
+      const transferId = `wh_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      const sourceTxHash = `${data.fromChain}_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      
+      // In a real implementation, this would initiate a cross-chain transfer via Wormhole
+      res.status(200).json({
+        success: true,
+        transferId,
+        sourceTxHash,
+        fromChain: data.fromChain,
+        toChain: data.toChain,
+        amount: data.amount,
+        tokenAddress: data.tokenAddress,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error initiating cross-chain transfer" });
+    }
+  });
+  
+  // Get transfer status
+  apiRouter.get("/cross-chain/status/:transferId", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const transferId = req.params.transferId;
+      
+      // In a real implementation, this would query the actual transfer status
+      // For demo purposes, return a random status based on the timestamp in the transfer ID
+      const timestamp = parseInt(transferId.split('_')[1]);
+      const elapsed = Date.now() - timestamp;
+      
+      let status;
+      let txHash;
+      
+      if (elapsed < 10000) {
+        status = 'initiated';
+      } else if (elapsed < 20000) {
+        status = 'source_transfer_pending';
+        txHash = `source_${transferId}`;
+      } else if (elapsed < 30000) {
+        status = 'source_transfer_complete';
+        txHash = `source_${transferId}`;
+      } else if (elapsed < 40000) {
+        status = 'wormhole_relay_pending';
+        txHash = `source_${transferId}`;
+      } else if (elapsed < 50000) {
+        status = 'destination_transfer_pending';
+        txHash = `dest_${transferId}`;
+      } else {
+        status = 'completed';
+        txHash = `dest_${transferId}`;
+      }
+      
+      res.status(200).json({
+        success: true,
+        transferId,
+        status,
+        txHash,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error fetching transfer status" });
+    }
+  });
+  
+  // Get supported chains
+  apiRouter.get("/cross-chain/supported-chains", apiKeyAuth, async (req: Request, res: Response) => {
+    // In a real implementation, this would query the actual supported chains
+    res.status(200).json({
+      success: true,
+      chains: ['solana', 'ethereum', 'polygon', 'avalanche', 'bsc']
+    });
+  });
+  
+  // Get fee estimate
+  apiRouter.get("/cross-chain/fee-estimate", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const fromChain = req.query.fromChain as string;
+      const toChain = req.query.toChain as string;
+      const amount = parseFloat(req.query.amount as string);
+      
+      if (!fromChain || !toChain || isNaN(amount)) {
+        return res.status(400).json({ error: "Invalid parameters" });
+      }
+      
+      // Calculate a mock fee based on the chains and amount
+      let fee = 0;
+      let token = '';
+      
+      if (fromChain === 'solana') {
+        fee = 0.001;
+        token = 'SOL';
+      } else if (fromChain === 'ethereum') {
+        fee = 0.005;
+        token = 'ETH';
+      } else {
+        fee = 0.01;
+        token = fromChain.toUpperCase();
+      }
+      
+      // Add a small percentage of the amount
+      fee += amount * 0.005;
+      
+      res.status(200).json({
+        success: true,
+        fee: parseFloat(fee.toFixed(6)),
+        token,
+        fromChain,
+        toChain,
+        amount
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error calculating fee estimate" });
+    }
+  });
+  
+  // Get transfer history
+  apiRouter.get("/cross-chain/history", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const walletPublicKey = req.query.walletPublicKey as string;
+      
+      if (!walletPublicKey) {
+        return res.status(400).json({ error: "Wallet public key is required" });
+      }
+      
+      // Mock transfer history
+      const transfers = [
+        {
+          id: `wh_${Date.now() - 3600000}_${Math.floor(Math.random() * 1000000)}`,
+          fromChain: 'solana',
+          toChain: 'ethereum',
+          amount: 10,
+          token: 'GAMI',
+          status: 'completed',
+          sourceTxHash: `sol_${Date.now() - 3600000}_${Math.floor(Math.random() * 1000000)}`,
+          destinationTxHash: `eth_${Date.now() - 3550000}_${Math.floor(Math.random() * 1000000)}`,
+          timestamp: new Date(Date.now() - 3600000)
+        },
+        {
+          id: `wh_${Date.now() - 7200000}_${Math.floor(Math.random() * 1000000)}`,
+          fromChain: 'ethereum',
+          toChain: 'solana',
+          amount: 5,
+          token: 'GAMI',
+          status: 'completed',
+          sourceTxHash: `eth_${Date.now() - 7200000}_${Math.floor(Math.random() * 1000000)}`,
+          destinationTxHash: `sol_${Date.now() - 7150000}_${Math.floor(Math.random() * 1000000)}`,
+          timestamp: new Date(Date.now() - 7200000)
+        }
+      ];
+      
+      res.status(200).json({
+        success: true,
+        transfers
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error fetching transfer history" });
+    }
+  });
+  
   // Admin dashboard API endpoints
   
   // Get project stats

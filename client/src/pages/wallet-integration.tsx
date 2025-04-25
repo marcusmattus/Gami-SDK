@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, InfoIcon, ArrowRightIcon, WalletIcon, CoinsIcon, ArrowDownIcon } from "lucide-react";
+import { GamiSDK, TransferStatus, ChainType } from "@/sdk";
 
 interface WalletProvider {
   id: number;
@@ -18,6 +23,12 @@ interface WalletProvider {
   isEnabled: boolean;
   config?: Record<string, any>;
 }
+
+// Initialize SDK
+const gamiSDK = new GamiSDK({ 
+  apiKey: 'test-api-key-123',
+  environment: 'development'
+});
 
 export default function WalletIntegration() {
   const { toast } = useToast();
@@ -116,6 +127,7 @@ export default function WalletIntegration() {
         <Tabs defaultValue="wallets" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="wallets">Wallets</TabsTrigger>
+            <TabsTrigger value="demo">Demo</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="implementation">Implementation</TabsTrigger>
           </TabsList>
@@ -185,6 +197,13 @@ export default function WalletIntegration() {
                 Users will only be able to connect with the wallet providers you have enabled. Make sure to test wallet connections before enabling them in production.
               </AlertDescription>
             </Alert>
+          </TabsContent>
+          
+          <TabsContent value="demo">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <WalletConnectDemo />
+              <CrossChainTransferDemo />
+            </div>
           </TabsContent>
           
           <TabsContent value="settings">

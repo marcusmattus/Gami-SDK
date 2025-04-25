@@ -1,6 +1,7 @@
 import { GamiSDKConfig, TrackEventParams, ConnectWalletParams } from './types';
 import { EventTracker } from './event-tracker';
-import { WalletConnector } from './wallet-connector';
+import { WalletConnector, TransactionParams, WalletData } from './wallet-connector';
+import { CrossChainTransfer, CrossChainTransferParams, ChainType } from './cross-chain-transfer';
 
 /**
  * Gami Protocol SDK for integrating gamification into React applications
@@ -10,6 +11,7 @@ export class GamiSDK {
   private apiUrl: string;
   private eventTracker: EventTracker;
   private walletConnector: WalletConnector;
+  private crossChainTransfer: CrossChainTransfer;
 
   /**
    * Initialize the Gami SDK
@@ -30,6 +32,7 @@ export class GamiSDK {
     // Initialize components
     this.eventTracker = new EventTracker(this.apiUrl, this.config.apiKey);
     this.walletConnector = new WalletConnector(this.apiUrl, this.config.apiKey);
+    this.crossChainTransfer = new CrossChainTransfer(this.apiUrl, this.config.apiKey);
   }
 
   /**
@@ -59,13 +62,96 @@ export class GamiSDK {
   }
 
   /**
-   * Connect to a Solana wallet
+   * Connect to a blockchain wallet
    * @param params Connection parameters
    */
   async connectWallet(params: ConnectWalletParams) {
     return this.walletConnector.connectWallet(params);
   }
+
+  /**
+   * Disconnect a wallet
+   * @param publicKey Wallet public key
+   */
+  async disconnectWallet(publicKey: string) {
+    return this.walletConnector.disconnectWallet(publicKey);
+  }
+
+  /**
+   * Get a connected wallet by public key
+   * @param publicKey The wallet's public key
+   */
+  getWallet(publicKey: string): WalletData | undefined {
+    return this.walletConnector.getWallet(publicKey);
+  }
+
+  /**
+   * Get all connected wallets
+   */
+  getAllWallets(): WalletData[] {
+    return this.walletConnector.getAllWallets();
+  }
+
+  /**
+   * Check if a wallet is connected
+   * @param publicKey Wallet public key
+   */
+  isWalletConnected(publicKey: string): boolean {
+    return this.walletConnector.isWalletConnected(publicKey);
+  }
+
+  /**
+   * Get token balances for a wallet
+   * @param publicKey Wallet's public key
+   */
+  async getTokenBalances(publicKey: string) {
+    return this.walletConnector.getTokenBalances(publicKey);
+  }
+
+  /**
+   * Send a transaction from a connected wallet
+   * @param publicKey Wallet's public key
+   * @param params Transaction parameters
+   */
+  async sendTransaction(publicKey: string, params: TransactionParams) {
+    return this.walletConnector.sendTransaction(publicKey, params);
+  }
+
+  /**
+   * Initiate a cross-chain token transfer
+   * @param params Transfer parameters
+   */
+  async transferTokensCrossChain(params: CrossChainTransferParams) {
+    return this.crossChainTransfer.transferTokens(params);
+  }
+
+  /**
+   * Get supported chains for cross-chain transfers
+   */
+  async getSupportedChains() {
+    return this.crossChainTransfer.getSupportedChains();
+  }
+
+  /**
+   * Get the fee estimate for a cross-chain transfer
+   * @param fromChain Source chain
+   * @param toChain Destination chain
+   * @param amount Amount to transfer
+   */
+  async getCrossChainFeeEstimate(fromChain: ChainType, toChain: ChainType, amount: number) {
+    return this.crossChainTransfer.getFeeEstimate(fromChain, toChain, amount);
+  }
+
+  /**
+   * Get transfer history for a user
+   * @param walletPublicKey The user's wallet public key
+   */
+  async getCrossChainTransferHistory(walletPublicKey: string) {
+    return this.crossChainTransfer.getTransferHistory(walletPublicKey);
+  }
 }
 
 // Export types
 export * from './types';
+export * from './wallet-connector';
+export * from './cross-chain-transfer';
