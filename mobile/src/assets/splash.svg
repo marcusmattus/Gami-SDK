@@ -1,0 +1,9 @@
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1242" height="2436" fill="#7631F9"/>
+  <g transform="translate(321, 1068)">
+    <path d="M300 0C137.458 0 0 137.458 0 300C0 462.542 137.458 600 300 600C462.542 600 600 462.542 600 300C600 137.458 462.542 0 300 0ZM300 525C178.578 525 75 421.422 75 300C75 178.578 178.578 75 300 75C421.422 75 525 178.578 525 300C525 421.422 421.422 525 300 525Z" fill="white"/>
+    <path d="M350 225H250V325H350V225Z" fill="white"/>
+    <path d="M300 150C236.25 150 185 201.25 185 265H255C255 239.588 274 220 300 220C326 220 345 239 345 265C345 290.412 326 310 300 310V380H370V327.5C405 310 445 290 445 252.5C445 200 380 150 300 150Z" fill="white"/>
+  </g>
+  <text x="621" y="1800" font-family="Arial" font-size="80" text-anchor="middle" fill="white">GAMI PROTOCOL</text>
+</svg>
