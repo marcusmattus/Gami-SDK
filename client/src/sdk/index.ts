@@ -2,6 +2,7 @@ import { GamiSDKConfig, TrackEventParams, ConnectWalletParams } from './types';
 import { EventTracker } from './event-tracker';
 import { WalletConnector, TransactionParams, WalletData } from './wallet-connector';
 import { CrossChainTransfer, CrossChainTransferParams, ChainType } from './cross-chain-transfer';
+import { WalrusStorage, WalrusStorageConfig, StoreOptions } from './walrus-storage';
 import * as gamification from './gamification';
 
 /**
@@ -13,6 +14,7 @@ export class GamiSDK {
   private eventTracker: EventTracker;
   private walletConnector: WalletConnector;
   private crossChainTransfer: CrossChainTransfer;
+  private walrusStorage: WalrusStorage | null = null;
 
   /**
    * Initialize the Gami SDK
@@ -230,6 +232,65 @@ export class GamiSDK {
   async getProjectAnalytics() {
     return gamification.getAnalytics();
   }
+
+  /**
+   * Initialize Walrus blockchain storage
+   * @param config Walrus storage configuration
+   * @returns True if initialization was successful
+   */
+  async initializeStorage(config: WalrusStorageConfig): Promise<boolean> {
+    this.walrusStorage = new WalrusStorage(config);
+    return this.walrusStorage.initialize();
+  }
+
+  /**
+   * Store data in Walrus blockchain storage
+   * @param data Data to store (string or binary)
+   * @param options Storage options
+   * @returns Storage result with blob ID
+   */
+  async storeData(data: string | Uint8Array, options?: StoreOptions) {
+    if (!this.walrusStorage) {
+      throw new Error('Walrus storage not initialized. Call initializeStorage() first.');
+    }
+    return this.walrusStorage.store(data, options);
+  }
+
+  /**
+   * Retrieve data from Walrus blockchain storage
+   * @param blobId Blob ID to retrieve
+   * @returns Retrieved data and metadata
+   */
+  async retrieveData(blobId: string) {
+    if (!this.walrusStorage) {
+      throw new Error('Walrus storage not initialized. Call initializeStorage() first.');
+    }
+    return this.walrusStorage.retrieve(blobId);
+  }
+
+  /**
+   * Delete data from Walrus blockchain storage
+   * @param blobId Blob ID to delete
+   * @returns Transaction ID of the deletion
+   */
+  async deleteData(blobId: string) {
+    if (!this.walrusStorage) {
+      throw new Error('Walrus storage not initialized. Call initializeStorage() first.');
+    }
+    return this.walrusStorage.delete(blobId);
+  }
+
+  /**
+   * Get storage blob status
+   * @param blobId Blob ID to check
+   * @returns Status information about the blob
+   */
+  async getStorageBlobStatus(blobId: string) {
+    if (!this.walrusStorage) {
+      throw new Error('Walrus storage not initialized. Call initializeStorage() first.');
+    }
+    return this.walrusStorage.getBlobStatus(blobId);
+  }
 }
 
 // Export types
@@ -237,3 +298,4 @@ export * from './types';
 export * from './wallet-connector';
 export * from './cross-chain-transfer';
 export { gamification };
+export * from './walrus-storage';

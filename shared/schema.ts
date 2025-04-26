@@ -75,6 +75,14 @@ export const rewardDistributions = pgTable("reward_distributions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const walrusMetadata = pgTable("walrus_metadata", {
+  id: serial("id").primaryKey(),
+  blobId: text("blob_id").notNull().unique(),
+  metadata: json("metadata").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
@@ -83,6 +91,7 @@ export const insertUserXpTransactionSchema = createInsertSchema(userXpTransactio
 export const insertCampaignSchema = createInsertSchema(campaigns).omit({ id: true, createdAt: true });
 export const insertWalletIntegrationSchema = createInsertSchema(walletIntegrations).omit({ id: true, createdAt: true });
 export const insertRewardDistributionSchema = createInsertSchema(rewardDistributions).omit({ id: true, createdAt: true });
+export const insertWalrusMetadataSchema = createInsertSchema(walrusMetadata).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -105,6 +114,9 @@ export type InsertWalletIntegration = z.infer<typeof insertWalletIntegrationSche
 
 export type RewardDistribution = typeof rewardDistributions.$inferSelect;
 export type InsertRewardDistribution = z.infer<typeof insertRewardDistributionSchema>;
+
+export type WalrusMetadata = typeof walrusMetadata.$inferSelect;
+export type InsertWalrusMetadata = z.infer<typeof insertWalrusMetadataSchema>;
 
 // API Schemas
 export const trackEventSchema = z.object({
