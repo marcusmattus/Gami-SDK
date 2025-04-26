@@ -78,8 +78,8 @@ const WalletTransactionSchema = new Schema<IWalletTransaction>({
   versionKey: false
 });
 
-// Add indexes for efficient querying
-WalletTransactionSchema.index({ transactionId: 1 });
+// transactionId already has an implicit index due to unique: true
+// No need to explicitly add it again
 WalletTransactionSchema.index({ userId: 1 });
 WalletTransactionSchema.index({ externalUserId: 1, projectId: 1 });
 WalletTransactionSchema.index({ walletAddress: 1 });
