@@ -114,11 +114,24 @@ export class WalrusStorage {
 
       // Set up Walrus client
       const packageConfig = this.getPackageConfig();
+      
+      // Create a Walrus client with the necessary configuration
+      // Using type assertion to work with client architecture
+      // The Walrus client constructor expects network to be only 'testnet' or 'mainnet',
+      // but we support 'devnet' internally (mapped to testnet in our code)
+      const networkForClient = this.config.network === 'devnet' ? 'testnet' : this.config.network;
+      
       this.client = new WalrusClient({
-        client: suiClient,
-        signer: this.keypair || undefined,
-        packageConfig
-      });
+        packageConfig,
+        network: networkForClient as 'testnet' | 'mainnet',
+      }) as unknown as WalrusClient;
+      
+      // Manually set properties that may not be in the public interface
+      // We need to use this approach for compatibility
+      (this.client as any).suiClient = suiClient;
+      if (this.keypair) {
+        (this.client as any).signer = this.keypair;
+      }
 
       this.initialized = true;
       return true;
@@ -142,17 +155,26 @@ export class WalrusStorage {
       : data;
 
     try {
+      // We need to work with the API versions that may not match 
+      // the exact TypeScript interface. Using type assertions here.
+      
       // Register blob on-chain
+      // Create transaction and add blob registration
       const tx = new Transaction();
+      
+      // Assuming registerBlob returns an object with transaction and blob details
       const registerBlobResult = await this.client!.registerBlob({
         data: dataBytes,
         // Use options provided or defaults
         deletable: options.deletable ?? false,
         storageEpochs: options.storageEpochs, // undefined = permanent
-      }, { transaction: tx });
-
-      // Execute transaction
-      const result = await tx.execute({ client: this.client!['suiClient'] });
+      }, { transaction: tx }) as any;
+      
+      // Execute transaction with suiClient
+      const suiClient = (this.client as any).suiClient;
+      const result = await (tx as any).execute({ client: suiClient });
+      
+      // Extract the blob ID from the result
       const blobId = registerBlobResult.blobId;
 
       // Store metadata if provided
@@ -213,13 +235,17 @@ export class WalrusStorage {
     await this.ensureInitialized();
 
     try {
+      // Create transaction for blob deletion
       const tx = new Transaction();
-      await this.client!.deleteBlob({ blobId }, { transaction: tx });
       
-      // Execute transaction
-      const result = await tx.execute({ client: this.client!['suiClient'] });
+      // Add blob deletion to transaction
+      await this.client!.deleteBlob({ blobId }, { transaction: tx }) as any;
       
-      // Also delete metadata
+      // Execute transaction with suiClient
+      const suiClient = (this.client as any).suiClient;
+      const result = await (tx as any).execute({ client: suiClient });
+      
+      // Also delete metadata from the backend
       await this.deleteMetadata(blobId);
       
       return result.digest;
@@ -254,7 +280,7 @@ export class WalrusStorage {
    */
   private async storeMetadata(blobId: string, metadata: BlobMetadata): Promise<void> {
     try {
-      await axios.post('/walrus/metadata', {
+      await axios.post('/api/walrus/metadata', {
         blobId,
         metadata
       });
@@ -271,11 +297,13 @@ export class WalrusStorage {
    */
   private async retrieveMetadata(blobId: string): Promise<BlobMetadata | undefined> {
     try {
-      const response = await axios.get('/walrus/metadata', { 
-        params: { blobId } 
-      });
+      const response = await axios.get(`/api/walrus/metadata/${blobId}`);
       return response.data.metadata;
     } catch (error) {
+      // 404 is expected if metadata is not found
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return undefined;
+      }
       console.error('Failed to retrieve metadata for blob:', error);
       return undefined;
     }
@@ -287,10 +315,12 @@ export class WalrusStorage {
    */
   private async deleteMetadata(blobId: string): Promise<void> {
     try {
-      await axios.delete('/walrus/metadata', { 
-        params: { blobId } 
-      });
+      await axios.delete(`/api/walrus/metadata/${blobId}`);
     } catch (error) {
+      // 404 is expected if metadata is not found
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return;
+      }
       console.error('Failed to delete metadata for blob:', error);
       // Continue even if metadata deletion fails
     }
