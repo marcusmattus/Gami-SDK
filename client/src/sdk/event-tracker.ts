@@ -1,12 +1,15 @@
 import { TrackEventParams, TrackEventResponse } from './types';
+import { apiRequest, configureApi } from './api';
 
 export class EventTracker {
-  private apiUrl: string;
-  private apiKey: string;
-
+  /**
+   * Initialize the event tracker with API configuration
+   * @param apiUrl Base API URL
+   * @param apiKey API key
+   */
   constructor(apiUrl: string, apiKey: string) {
-    this.apiUrl = apiUrl;
-    this.apiKey = apiKey;
+    // Configure the API module for this instance
+    configureApi(apiUrl, apiKey);
   }
 
   /**
@@ -16,25 +19,8 @@ export class EventTracker {
    */
   async trackEvent(params: TrackEventParams): Promise<TrackEventResponse> {
     try {
-      const response = await fetch(`${this.apiUrl}/track`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
-        body: JSON.stringify(params),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || 'Failed to track event',
-        };
-      }
-
-      return data as TrackEventResponse;
+      const response = await apiRequest('POST', '/track', params);
+      return await response.json() as TrackEventResponse;
     } catch (error) {
       return {
         success: false,

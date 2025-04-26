@@ -1,4 +1,5 @@
 import { ConnectWalletParams, ConnectWalletResponse, WalletType, GamiError } from './types';
+import { apiRequest, configureApi } from './api';
 
 /**
  * Wallet Connection Data
@@ -49,13 +50,16 @@ export interface TokenBalanceResponse {
  * Manages wallet connections and interactions for blockchain operations
  */
 export class WalletConnector {
-  private apiUrl: string;
-  private apiKey: string;
   private connectedWallets: Map<string, WalletData> = new Map();
 
+  /**
+   * Initialize the wallet connector with API configuration
+   * @param apiUrl Base API URL
+   * @param apiKey API key
+   */
   constructor(apiUrl: string, apiKey: string) {
-    this.apiUrl = apiUrl;
-    this.apiKey = apiKey;
+    // Configure the API module for this instance
+    configureApi(apiUrl, apiKey);
   }
 
   /**
@@ -66,23 +70,21 @@ export class WalletConnector {
   async connectWallet(params: ConnectWalletParams): Promise<ConnectWalletResponse> {
     try {
       // First verify wallet type is enabled on the server
-      const serverResponse = await fetch(`${this.apiUrl}/connect-wallet`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
-        body: JSON.stringify({ walletType: params.walletType }),
-      });
-
-      const serverData = await serverResponse.json();
-
-      if (!serverResponse.ok) {
-        const error = new Error(serverData.error || 'Failed to verify wallet type');
+      try {
+        const serverResponse = await apiRequest('POST', '/connect-wallet', 
+          { walletType: params.walletType }
+        );
+        
+        // If we reach here, the server check passed
+      } catch (serverError) {
+        const error = new Error(serverError instanceof Error 
+          ? serverError.message 
+          : 'Failed to verify wallet type');
+        
         if (params.onError) params.onError(error);
         return {
           success: false,
-          error: serverData.error || 'Failed to verify wallet type',
+          error: error.message,
         };
       }
 
@@ -218,28 +220,10 @@ export class WalletConnector {
 
     try {
       // Call our backend API for token balance information
-      const response = await fetch(`${this.apiUrl}/wallet/balances`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
-        body: JSON.stringify({
-          publicKey,
-          chainType: walletData.chainType
-        }),
+      const response = await apiRequest('POST', '/wallet/balances', {
+        publicKey,
+        chainType: walletData.chainType
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error: {
-            code: errorData.error?.code || 'BALANCE_FETCH_ERROR',
-            message: errorData.error?.message || 'Failed to fetch token balances'
-          }
-        };
-      }
 
       const data = await response.json();
       return {
@@ -305,25 +289,13 @@ export class WalletConnector {
     // This would be implemented using Solana web3.js in a real app
     // Here we'll use a server API instead since we don't have the libraries installed
     
-    const response = await fetch(`${this.apiUrl}/solana/transaction`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
-      body: JSON.stringify({
-        fromPublicKey: walletData.publicKey,
-        toAddress: params.to,
-        amount: params.amount,
-        token: params.token || 'SOL',
-        memo: params.memo
-      }),
+    const response = await apiRequest('POST', '/solana/transaction', {
+      fromPublicKey: walletData.publicKey,
+      toAddress: params.to,
+      amount: params.amount,
+      token: params.token || 'SOL',
+      memo: params.memo
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to create Solana transaction');
-    }
 
     const data = await response.json();
     
@@ -346,26 +318,14 @@ export class WalletConnector {
    * Generic transaction for other chains
    */
   private async sendGenericTransaction(walletData: WalletData, params: TransactionParams): Promise<TransactionResponse> {
-    const response = await fetch(`${this.apiUrl}/transaction`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
-      body: JSON.stringify({
-        fromPublicKey: walletData.publicKey,
-        chainType: walletData.chainType,
-        toAddress: params.to,
-        amount: params.amount,
-        token: params.token,
-        memo: params.memo
-      }),
+    const response = await apiRequest('POST', '/transaction', {
+      fromPublicKey: walletData.publicKey,
+      chainType: walletData.chainType,
+      toAddress: params.to,
+      amount: params.amount,
+      token: params.token,
+      memo: params.memo
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to send transaction');
-    }
 
     const data = await response.json();
     

@@ -1,4 +1,5 @@
 import { GamiError } from './types';
+import { apiRequest, configureApi } from './api';
 
 // Wormhole cross-chain transfer types
 export interface CrossChainTransferParams {
@@ -35,12 +36,14 @@ export interface CrossChainTransferResponse {
  * Handles cross-chain token transfers via Wormhole protocol
  */
 export class CrossChainTransfer {
-  private apiUrl: string;
-  private apiKey: string;
-
+  /**
+   * Initialize the cross-chain transfer with API configuration
+   * @param apiUrl Base API URL
+   * @param apiKey API key
+   */
   constructor(apiUrl: string, apiKey: string) {
-    this.apiUrl = apiUrl;
-    this.apiKey = apiKey;
+    // Configure the API module for this instance
+    configureApi(apiUrl, apiKey);
   }
 
   /**
