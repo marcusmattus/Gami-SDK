@@ -59,40 +59,17 @@ export class CrossChainTransfer {
 
     try {
       // Call our backend API that will handle the Wormhole integration
-      const response = await fetch(`${this.apiUrl}/cross-chain/transfer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
-        body: JSON.stringify({
-          fromChain: params.fromChain,
-          toChain: params.toChain,
-          amount: params.amount,
-          tokenAddress: params.tokenAddress,
-          destinationAddress: params.destinationAddress,
-          walletPublicKey: params.walletPublicKey
-        }),
+      const response = await apiRequest('POST', '/cross-chain/transfer', {
+        fromChain: params.fromChain,
+        toChain: params.toChain,
+        amount: params.amount,
+        tokenAddress: params.tokenAddress,
+        destinationAddress: params.destinationAddress,
+        walletPublicKey: params.walletPublicKey
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        // Handle error
-        if (params.onStatusChange) {
-          params.onStatusChange(TransferStatus.FAILED);
-        }
-        
-        return {
-          success: false,
-          error: {
-            code: data.error?.code || 'TRANSFER_FAILED',
-            message: data.error?.message || 'Failed to initiate cross-chain transfer',
-            details: data.error?.details
-          }
-        };
-      }
-
+      
       // Subscribe to transfer status updates if callback provided
       if (params.onStatusChange && data.transferId) {
         this.subscribeToTransferStatus(data.transferId, params.onStatusChange);
@@ -125,16 +102,7 @@ export class CrossChainTransfer {
    */
   async getSupportedChains(): Promise<ChainType[]> {
     try {
-      const response = await fetch(`${this.apiUrl}/cross-chain/supported-chains`, {
-        headers: {
-          'X-API-Key': this.apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        return ['solana', 'ethereum']; // Default fallback
-      }
-
+      const response = await apiRequest('GET', '/cross-chain/supported-chains');
       const data = await response.json();
       return data.chains as ChainType[];
     } catch (error) {
@@ -152,18 +120,10 @@ export class CrossChainTransfer {
    */
   async getFeeEstimate(fromChain: ChainType, toChain: ChainType, amount: number): Promise<{ fee: number; token: string }> {
     try {
-      const response = await fetch(
-        `${this.apiUrl}/cross-chain/fee-estimate?fromChain=${fromChain}&toChain=${toChain}&amount=${amount}`,
-        {
-          headers: {
-            'X-API-Key': this.apiKey,
-          },
-        }
+      const response = await apiRequest(
+        'GET', 
+        `/cross-chain/fee-estimate?fromChain=${fromChain}&toChain=${toChain}&amount=${amount}`
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch fee estimate');
-      }
 
       const data = await response.json();
       return {
@@ -187,18 +147,10 @@ export class CrossChainTransfer {
    */
   async getTransferHistory(walletPublicKey: string): Promise<any[]> {
     try {
-      const response = await fetch(
-        `${this.apiUrl}/cross-chain/history?walletPublicKey=${walletPublicKey}`,
-        {
-          headers: {
-            'X-API-Key': this.apiKey,
-          },
-        }
+      const response = await apiRequest(
+        'GET', 
+        `/cross-chain/history?walletPublicKey=${walletPublicKey}`
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch transfer history');
-      }
 
       const data = await response.json();
       return data.transfers || [];
@@ -219,19 +171,7 @@ export class CrossChainTransfer {
     // This is a simplified implementation, in a real scenario would use WebSockets
     const checkStatus = async () => {
       try {
-        const response = await fetch(
-          `${this.apiUrl}/cross-chain/status/${transferId}`,
-          {
-            headers: {
-              'X-API-Key': this.apiKey,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch transfer status');
-        }
-
+        const response = await apiRequest('GET', `/cross-chain/status/${transferId}`);
         const data = await response.json();
         callback(data.status as TransferStatus, data.txHash);
 
