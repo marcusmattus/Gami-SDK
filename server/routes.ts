@@ -7,6 +7,8 @@ import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth, generateApiKey } from "./auth";
+import { gamificationService } from "./services/gamification.service";
+import { isMongoAvailable } from "./mongo";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -680,6 +682,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ---------------------------------------
+  // New MongoDB-powered API endpoints
+  // ---------------------------------------
+  
+  // Status endpoint to check services
+  apiRouter.get("/status", (req: Request, res: Response) => {
+    res.status(200).json({
+      status: "online",
+      postgres: true,
+      mongodb: isMongoAvailable
+    });
+  });
+  
+  // Get user profile with achievements and inventory
+  apiRouter.get("/users/:externalUserId/profile", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const externalUserId = req.params.externalUserId;
+      const project = (req as any).project;
+      
+      const profile = await gamificationService.getUserProfile(project.id, externalUserId);
+      
+      res.status(200).json({ success: true, profile });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error fetching user profile" });
+    }
+  });
+  
+  // Get user events
+  apiRouter.get("/users/:externalUserId/events", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const externalUserId = req.params.externalUserId;
+      const project = (req as any).project;
+      const limit = parseInt(req.query.limit as string) || 100;
+      const skip = parseInt(req.query.skip as string) || 0;
+      
+      const events = await gamificationService.getUserEvents(project.id, externalUserId, limit, skip);
+      
+      res.status(200).json({ success: true, events });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error fetching user events" });
+    }
+  });
+  
+  // Award achievement
+  apiRouter.post("/users/:externalUserId/achievements", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const achievementSchema = z.object({
+        achievementId: z.string(),
+        title: z.string(),
+        description: z.string(),
+        imageUrl: z.string().optional(),
+        xpAmount: z.number().int().optional(),
+        metadata: z.record(z.any()).optional()
+      });
+      
+      const data = achievementSchema.parse(req.body);
+      const externalUserId = req.params.externalUserId;
+      const project = (req as any).project;
+      
+      const result = await gamificationService.awardAchievement({
+        projectId: project.id,
+        externalUserId,
+        achievementId: data.achievementId,
+        achievementTitle: data.title,
+        achievementDescription: data.description,
+        imageUrl: data.imageUrl,
+        xpAmount: data.xpAmount,
+        metadata: data.metadata
+      });
+      
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error awarding achievement" });
+    }
+  });
+  
+  // Add inventory item
+  apiRouter.post("/users/:externalUserId/inventory", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const itemSchema = z.object({
+        itemId: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+        imageUrl: z.string().optional(),
+        quantity: z.number().int().positive().default(1),
+        attributes: z.record(z.any()).optional(),
+        metadata: z.record(z.any()).optional()
+      });
+      
+      const data = itemSchema.parse(req.body);
+      const externalUserId = req.params.externalUserId;
+      const project = (req as any).project;
+      
+      const result = await gamificationService.addInventoryItem({
+        projectId: project.id,
+        externalUserId,
+        itemId: data.itemId,
+        itemName: data.name,
+        itemDescription: data.description,
+        imageUrl: data.imageUrl,
+        quantity: data.quantity,
+        attributes: data.attributes,
+        metadata: data.metadata
+      });
+      
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error adding inventory item" });
+    }
+  });
+  
+  // Enhanced track endpoint (works with both MongoDB and PostgreSQL)
+  apiRouter.post("/track/v2", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const trackSchema = z.object({
+        userId: z.string(),
+        event: z.string(),
+        actionType: z.string().default('default'),
+        xpAmount: z.number().int().optional(),
+        contextData: z.record(z.any()).optional(),
+        metadata: z.record(z.any()).optional(),
+        sessionId: z.string().optional()
+      });
+      
+      const data = trackSchema.parse(req.body);
+      const project = (req as any).project;
+      
+      // If xpAmount is not provided, try to find it from event config
+      let xpAmount = data.xpAmount;
+      if (xpAmount === undefined) {
+        const events = await storage.getXpEventsByProjectId(project.id);
+        const xpEvent = events.find(event => event.name === data.event);
+        
+        if (xpEvent) {
+          xpAmount = xpEvent.xpAmount;
+        } else {
+          // Default to 0 if event not found
+          xpAmount = 0;
+        }
+      }
+      
+      const result = await gamificationService.trackXpEvent({
+        projectId: project.id,
+        externalUserId: data.userId,
+        eventName: data.event,
+        actionType: data.actionType,
+        xpAmount,
+        contextData: data.contextData,
+        metadata: data.metadata,
+        sessionId: data.sessionId
+      });
+      
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error tracking event" });
+    }
+  });
+  
+  // Get project analytics
+  apiRouter.get("/admin/analytics", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const project = (req as any).project;
+      
+      const analytics = await gamificationService.getProjectAnalytics(project.id);
+      
+      res.status(200).json({ success: true, analytics });
+    } catch (error) {
+      res.status(500).json({ error: "Error fetching analytics" });
+    }
+  });
+
   // Register API routes
   app.use("/api", apiRouter);
   
