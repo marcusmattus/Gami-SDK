@@ -2,6 +2,7 @@ import { GamiSDKConfig, TrackEventParams, ConnectWalletParams } from './types';
 import { EventTracker } from './event-tracker';
 import { WalletConnector, TransactionParams, WalletData } from './wallet-connector';
 import { CrossChainTransfer, CrossChainTransferParams, ChainType } from './cross-chain-transfer';
+import * as gamification from './gamification';
 
 /**
  * Gami Protocol SDK for integrating gamification into React applications
@@ -149,9 +150,90 @@ export class GamiSDK {
   async getCrossChainTransferHistory(walletPublicKey: string) {
     return this.crossChainTransfer.getTransferHistory(walletPublicKey);
   }
+
+  /**
+   * Check the status of services (PostgreSQL, MongoDB)
+   */
+  async checkServicesStatus() {
+    return gamification.checkStatus();
+  }
+
+  /**
+   * Award an achievement to a user
+   * @param userId The user ID
+   * @param achievement Achievement details
+   */
+  async awardAchievement(userId: string, achievement: {
+    achievementId: string;
+    title: string;
+    description: string;
+    imageUrl?: string;
+    xpAmount?: number;
+    metadata?: Record<string, any>;
+  }) {
+    return gamification.awardAchievement(userId, achievement);
+  }
+
+  /**
+   * Add an item to a user's inventory
+   * @param userId The user ID
+   * @param item Item details
+   */
+  async addInventoryItem(userId: string, item: {
+    itemId: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    quantity?: number;
+    attributes?: Record<string, any>;
+    metadata?: Record<string, any>;
+  }) {
+    return gamification.addInventoryItem(userId, item);
+  }
+
+  /**
+   * Track a gamification event with optional XP
+   * @param data Event data
+   */
+  async trackGamificationEvent(data: {
+    userId: string;
+    event: string;
+    actionType?: string;
+    xpAmount?: number;
+    contextData?: Record<string, any>;
+    metadata?: Record<string, any>;
+    sessionId?: string;
+  }) {
+    return gamification.trackEvent(data);
+  }
+
+  /**
+   * Get a user's profile with achievements and inventory
+   * @param userId The user ID
+   */
+  async getUserProfile(userId: string) {
+    return gamification.getUserProfile(userId);
+  }
+
+  /**
+   * Get a user's event history
+   * @param userId The user ID
+   * @param options Pagination options
+   */
+  async getUserEvents(userId: string, options?: { limit?: number; skip?: number }) {
+    return gamification.getUserEvents(userId, options);
+  }
+
+  /**
+   * Get analytics for the current project
+   */
+  async getProjectAnalytics() {
+    return gamification.getAnalytics();
+  }
 }
 
 // Export types
 export * from './types';
 export * from './wallet-connector';
 export * from './cross-chain-transfer';
+export { gamification };
