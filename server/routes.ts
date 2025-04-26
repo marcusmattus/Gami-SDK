@@ -11,7 +11,66 @@ import { gamificationService } from "./services/gamification.service";
 import { walrusService } from "./services/walrus.service";
 import { isMongoAvailable } from "./mongo";
 
+// Initialize test data for development purposes
+async function initializeTestData() {
+  try {
+    // Check if test project exists
+    const testApiKey = "test-dev-api-key-123456";
+    const existingProject = await storage.getProjectByApiKey(testApiKey);
+    
+    if (!existingProject) {
+      console.log("Creating test project with API key:", testApiKey);
+      
+      // Create a test user if needed
+      let testUser = await storage.getUserByUsername("testuser");
+      if (!testUser) {
+        testUser = await storage.createUser({
+          username: "testuser",
+          email: "test@example.com",
+          password: "hashedpassword", // This would be hashed in production
+          firstName: "Test",
+          lastName: "User"
+        });
+      }
+      
+      // Create test project
+      const project = await storage.createProject({
+        ownerId: testUser.id,
+        name: "Test Project",
+        apiKey: testApiKey,
+        description: "A test project for development",
+        environment: "development",
+        status: "active"
+      });
+      
+      // Create wallet integrations for the project
+      await storage.createWalletIntegration({
+        projectId: project.id,
+        walletType: "phantom",
+        isEnabled: true
+      });
+      
+      await storage.createWalletIntegration({
+        projectId: project.id,
+        walletType: "solflare",
+        isEnabled: true
+      });
+      
+      console.log("Test data initialized successfully");
+    } else {
+      console.log("Test project already exists");
+    }
+  } catch (error) {
+    console.error("Error initializing test data:", error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize test data in development
+  if (process.env.NODE_ENV === "development") {
+    await initializeTestData();
+  }
+  
   // Setup authentication
   const { requireAuth, apiKeyAuth } = setupAuth(app);
   
