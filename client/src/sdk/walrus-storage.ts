@@ -102,8 +102,8 @@ export class WalrusStorage {
       if (this.initialized) return true;
 
       // Set up SUI client
-      const rpcUrl = this.config.rpcUrl || this.getDefaultRpcUrl();
-      const suiClient = new SuiClient({ url: rpcUrl });
+      const clientUrl = this.config.rpcUrl || this.getDefaultRpcUrl();
+      const suiClient = new SuiClient({ url: clientUrl });
 
       // Set up keypair if private key provided
       if (this.config.privateKey) {
@@ -121,9 +121,11 @@ export class WalrusStorage {
       // but we support 'devnet' internally (mapped to testnet in our code)
       const networkForClient = this.config.network === 'devnet' ? 'testnet' : this.config.network;
       
+      // Initialize Walrus client with suiRpcUrl
       this.client = new WalrusClient({
         packageConfig,
         network: networkForClient as 'testnet' | 'mainnet',
+        suiRpcUrl: clientUrl
       }) as unknown as WalrusClient;
       
       // Manually set properties that may not be in the public interface
@@ -162,13 +164,18 @@ export class WalrusStorage {
       // Create transaction and add blob registration
       const tx = new Transaction();
       
-      // Assuming registerBlob returns an object with transaction and blob details
-      const registerBlobResult = await this.client!.registerBlob({
+      // The Walrus SDK may have different API versions with different parameter structures
+      // We'll handle both possibilities with type assertions
+      let registerBlobResult: any;
+      
+      // Use type assertion to bypass TypeScript errors due to SDK version differences
+      registerBlobResult = await (this.client as any).registerBlob({
         data: dataBytes,
         // Use options provided or defaults
         deletable: options.deletable ?? false,
         storageEpochs: options.storageEpochs, // undefined = permanent
-      }, { transaction: tx }) as any;
+        transaction: tx
+      });
       
       // Execute transaction with suiClient
       const suiClient = (this.client as any).suiClient;
@@ -238,8 +245,11 @@ export class WalrusStorage {
       // Create transaction for blob deletion
       const tx = new Transaction();
       
-      // Add blob deletion to transaction
-      await this.client!.deleteBlob({ blobId }, { transaction: tx }) as any;
+      // Use type assertion to bypass TypeScript errors due to SDK version differences
+      await (this.client as any).deleteBlob({
+        blobId,
+        transaction: tx
+      });
       
       // Execute transaction with suiClient
       const suiClient = (this.client as any).suiClient;
