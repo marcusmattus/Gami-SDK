@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth, generateApiKey } from "./auth";
 import { gamificationService } from "./services/gamification.service";
+import { walrusService } from "./services/walrus.service";
 import { isMongoAvailable } from "./mongo";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -879,6 +880,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Register API routes
+  // Walrus blockchain storage API endpoints
+  apiRouter.post("/walrus/metadata", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const metadataSchema = z.object({
+        blobId: z.string(),
+        metadata: z.record(z.any())
+      });
+      
+      const data = metadataSchema.parse(req.body);
+      
+      await walrusService.storeMetadata(data.blobId, data.metadata);
+      
+      res.status(201).json({
+        success: true,
+        blobId: data.blobId
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      res.status(500).json({ error: "Error storing Walrus metadata" });
+    }
+  });
+  
+  apiRouter.get("/walrus/metadata/:blobId", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const blobId = req.params.blobId;
+      
+      const metadata = await walrusService.getMetadata(blobId);
+      
+      if (!metadata) {
+        return res.status(404).json({ error: "Metadata not found" });
+      }
+      
+      res.status(200).json({
+        success: true,
+        blobId,
+        metadata
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error fetching Walrus metadata" });
+    }
+  });
+  
+  apiRouter.delete("/walrus/metadata/:blobId", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const blobId = req.params.blobId;
+      
+      const success = await walrusService.deleteMetadata(blobId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Metadata not found" });
+      }
+      
+      res.status(200).json({
+        success: true,
+        blobId
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error deleting Walrus metadata" });
+    }
+  });
+  
+  apiRouter.get("/walrus/metadata", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const metadata = await walrusService.listMetadata(limit, offset);
+      
+      res.status(200).json({
+        success: true,
+        count: metadata.length,
+        metadata
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Error listing Walrus metadata" });
+    }
+  });
+
   app.use("/api", apiRouter);
   
   const httpServer = createServer(app);
