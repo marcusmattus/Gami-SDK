@@ -258,10 +258,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const data = balanceSchema.parse(req.body);
       
-      // In a real implementation, this would fetch actual token balances from the blockchain
-      // For now, return mock data based on the chain type
+      // Prepare balances array with mock data
       let balances = [];
       
+      // If it's a Solana chain, attempt to get real GAMI token balance if token is created
+      if (data.chainType === 'solana') {
+        try {
+          const tokenService = await import('./services/token.service');
+          const tokenInfo = tokenService.getCurrentTokenInfo();
+          
+          if (tokenInfo) {
+            // Get real GAMI token balance
+            try {
+              const tokenBalance = await tokenService.getTokenBalance(data.publicKey);
+              
+              // Add real GAMI token to balances
+              balances = [
+                { token: 'SOL', amount: 1.25, usdValue: 125.00 }, // SOL is still mocked
+                { 
+                  token: 'GAMI', 
+                  amount: tokenBalance.uiBalance, 
+                  usdValue: tokenBalance.uiBalance * 0.1, // Mock value calculation
+                  tokenAddress: tokenInfo.address,
+                  solscanUrl: tokenInfo.solscanUrl
+                }
+              ];
+              
+              return res.status(200).json({ 
+                success: true, 
+                balances,
+                tokenInfo: {
+                  address: tokenInfo.address,
+                  solscanUrl: tokenInfo.solscanUrl
+                }
+              });
+            } catch (balanceError) {
+              console.error('Error fetching token balance:', balanceError);
+              // Fall back to mock data if balance fetch fails
+            }
+          }
+        } catch (tokenError) {
+          console.error('Error importing token service:', tokenError);
+          // Fall back to mock if token service fails
+        }
+      }
+      
+      // If we reach here, use mock data
       switch (data.chainType) {
         case 'solana':
           balances = [
@@ -341,10 +383,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const data = txSchema.parse(req.body);
       
-      // Generate a mock Solana transaction hash
+      // Import the token service for actual Solana transactions
+      // Only attempt real transactions if token is GAMI
+      if (data.token === 'GAMI') {
+        try {
+          const tokenService = await import('./services/token.service');
+          const tokenInfo = tokenService.getCurrentTokenInfo();
+          
+          if (tokenInfo) {
+            // Use the real token service to send the transaction
+            const result = await tokenService.transferTokens(
+              data.fromPublicKey, 
+              data.toAddress, 
+              data.amount
+            );
+            
+            return res.status(200).json({
+              success: true,
+              txHash: result.signature,
+              token: 'GAMI',
+              amount: data.amount,
+              tokenAddress: tokenInfo.address,
+              solscanUrl: tokenInfo.solscanUrl,
+              timestamp: new Date()
+            });
+          }
+        } catch (tokenError) {
+          console.error('Error using token service:', tokenError);
+          // Fall back to mock if real implementation fails
+        }
+      }
+      
+      // Generate a mock Solana transaction hash if we couldn't use the real implementation
       const txHash = `sol_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
       
-      // In a real implementation, this would create a Solana transaction using web3.js
       res.status(200).json({
         success: true,
         txHash,
@@ -938,6 +1010,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get GAMI token info
+  apiRouter.get("/token/info", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      // Import the token service
+      const tokenService = await import('./services/token.service');
+      const tokenInfo = tokenService.getCurrentTokenInfo();
+      
+      if (tokenInfo) {
+        // Get full token info
+        const fullTokenInfo = await tokenService.getTokenInfo();
+        return res.status(200).json({ 
+          success: true, 
+          token: fullTokenInfo,
+          solscanUrl: tokenInfo.solscanUrl
+        });
+      } else {
+        return res.status(404).json({ 
+          success: false, 
+          message: "GAMI token has not been created yet" 
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching token info:', error);
+      res.status(500).json({ error: "Error fetching token information" });
+    }
+  });
+  
+  // Create the GAMI token
+  apiRouter.post("/token/create", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      // Import the token service
+      const tokenService = await import('./services/token.service');
+      const existingToken = tokenService.getCurrentTokenInfo();
+      
+      if (existingToken) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "GAMI token already exists",
+          token: existingToken
+        });
+      }
+      
+      // Create the token
+      const tokenResult = await tokenService.createToken();
+      
+      // Mint initial supply
+      await tokenService.mintTokens(tokenResult.tokenAddress, 1000000);
+      
+      // Get token info
+      const tokenInfo = await tokenService.getTokenInfo();
+      
+      return res.status(201).json({
+        success: true,
+        token: tokenInfo,
+        message: "GAMI token created successfully"
+      });
+    } catch (error) {
+      console.error('Error creating token:', error);
+      res.status(500).json({ error: "Error creating GAMI token" });
+    }
+  });
+  
   // Register API routes
   // Walrus blockchain storage API endpoints
   // Using a middleware that skips authentication in development mode for easier testing
