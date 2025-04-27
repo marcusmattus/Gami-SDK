@@ -272,10 +272,8 @@ export default function XPManagement() {
                         <div className="col-span-2 text-center font-mono">{event.xpAmount}</div>
                         <div className="col-span-2 text-center">
                           <Badge
-                            variant={
-                              event.status === "active" ? "default" : 
-                              event.status === "testing" ? "warning" : "secondary"
-                            }
+                            className={event.status === "testing" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80" : ""}
+                            variant={event.status === "active" ? "default" : "secondary"}
                           >
                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                           </Badge>
