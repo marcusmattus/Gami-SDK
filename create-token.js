@@ -114,8 +114,23 @@ async function createToken() {
       issuerPublicKey: payer.publicKey.toString()
     };
     
+    // Save in JSON format for easy reading
     fs.writeFileSync('token-info.json', JSON.stringify(tokenInfo, null, 2));
     console.log('\nToken info saved to token-info.json');
+    
+    // Add info to README for documentation
+    try {
+      if (fs.existsSync('README.md')) {
+        let readme = fs.readFileSync('README.md', 'utf-8');
+        if (!readme.includes('## GAMI Token')) {
+          const tokenSection = `\n\n## GAMI Token\n\nToken Address: ${tokenMint.toString()}\nDecimals: ${decimals}\nNetwork: Solana Testnet\nSolscan URL: ${tokenInfo.solscanUrl}\n`;
+          fs.writeFileSync('README.md', readme + tokenSection);
+          console.log('Token info added to README.md');
+        }
+      }
+    } catch (error) {
+      console.warn('Could not update README:', error.message);
+    }
     
     return tokenInfo;
   } catch (error) {

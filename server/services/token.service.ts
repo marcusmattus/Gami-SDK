@@ -290,8 +290,8 @@ export async function getTokenInfo(): Promise<any> {
         freezeAuthority: mintInfo.freezeAuthority?.toString() || null,
         isInitialized: mintInfo.isInitialized
       };
-    } catch (mintError) {
-      console.warn('Could not fetch token from chain, using stored info:', mintError.message);
+    } catch (error: any) {
+      console.warn('Could not fetch token from chain, using stored info:', error.message);
       
       // If we can't get mint info, return the basic info we have
       return {
