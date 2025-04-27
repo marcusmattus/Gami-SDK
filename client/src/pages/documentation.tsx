@@ -116,8 +116,8 @@ export default function Documentation() {
                   <InfoIcon className="h-4 w-4" />
                   <AlertTitle>Getting Help</AlertTitle>
                   <AlertDescription>
-                    If you need assistance, join our <a href="#" className="text-primary-500 hover:underline">Discord community</a> or 
-                    contact <a href="#" className="text-primary-500 hover:underline">support@gamiprotocol.com</a>.
+                    If you need assistance, join our <a href="https://discord.gg/gamiprotocol" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">Discord community</a> or 
+                    contact <a href="mailto:support@gamiprotocol.com" className="text-primary-500 hover:underline">support@gamiprotocol.com</a>.
                   </AlertDescription>
                 </Alert>
 

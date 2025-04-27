@@ -1,8 +1,12 @@
 // Script to create a GAMI token on Solana testnet
-const { Connection, Keypair, PublicKey } = require('@solana/web3.js');
-const { createMint, getOrCreateAssociatedTokenAccount, mintTo, getMint } = require('@solana/spl-token');
-const fs = require('fs');
-const path = require('path');
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo, getMint } from '@solana/spl-token';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Set up Solana connection
 const endpoint = 'https://api.testnet.solana.com';
