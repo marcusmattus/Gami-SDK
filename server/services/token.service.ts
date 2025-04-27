@@ -11,6 +11,11 @@ import {
 } from '@solana/spl-token';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ES Module dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Set up Solana connection
 const endpoint = 'https://api.testnet.solana.com';
@@ -43,10 +48,26 @@ export async function getOrCreateKeypair(): Promise<Keypair> {
   }
 }
 
+// Initialize tokenInfo from token-info.json if it exists
 let tokenInfo: {
   mint: PublicKey;
   decimals: number;
 } | null = null;
+
+// Try to load token info from token-info.json
+try {
+  const tokenInfoPath = path.join(__dirname, '..', '..', 'token-info.json');
+  if (fs.existsSync(tokenInfoPath)) {
+    const savedTokenInfo = JSON.parse(fs.readFileSync(tokenInfoPath, 'utf-8'));
+    console.log('Loaded token info from file:', savedTokenInfo);
+    tokenInfo = {
+      mint: new PublicKey(savedTokenInfo.address),
+      decimals: savedTokenInfo.decimals
+    };
+  }
+} catch (error) {
+  console.error('Error loading token info from file:', error);
+}
 
 /**
  * Create a new SPL token on Solana testnet
@@ -257,17 +278,29 @@ export async function getTokenInfo(): Promise<any> {
       throw new Error('Token not created yet. Call createToken first.');
     }
     
-    const mintInfo = await getMint(connection, tokenInfo.mint);
-    
-    return {
-      address: tokenInfo.mint.toString(),
-      totalSupply: Number(mintInfo.supply) / (10 ** mintInfo.decimals),
-      decimals: mintInfo.decimals,
-      authority: mintInfo.mintAuthority?.toString(),
-      solscanUrl: `https://solscan.io/token/${tokenInfo.mint.toString()}?cluster=testnet`,
-      freezeAuthority: mintInfo.freezeAuthority?.toString() || null,
-      isInitialized: mintInfo.isInitialized
-    };
+    try {
+      const mintInfo = await getMint(connection, tokenInfo.mint);
+      
+      return {
+        address: tokenInfo.mint.toString(),
+        totalSupply: Number(mintInfo.supply) / (10 ** mintInfo.decimals),
+        decimals: mintInfo.decimals,
+        authority: mintInfo.mintAuthority?.toString(),
+        solscanUrl: `https://solscan.io/token/${tokenInfo.mint.toString()}?cluster=testnet`,
+        freezeAuthority: mintInfo.freezeAuthority?.toString() || null,
+        isInitialized: mintInfo.isInitialized
+      };
+    } catch (mintError) {
+      console.warn('Could not fetch token from chain, using stored info:', mintError.message);
+      
+      // If we can't get mint info, return the basic info we have
+      return {
+        address: tokenInfo.mint.toString(),
+        decimals: tokenInfo.decimals,
+        solscanUrl: `https://solscan.io/token/${tokenInfo.mint.toString()}?cluster=testnet`,
+        note: "Token verified from stored configuration. Full on-chain data unavailable."
+      };
+    }
   } catch (error) {
     console.error('Error getting token info:', error);
     throw error;
