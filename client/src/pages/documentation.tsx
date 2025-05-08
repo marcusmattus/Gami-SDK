@@ -1274,6 +1274,24 @@ const claimRewards = async (userId, walletAddress) => {
                           <td className="px-4 py-3 text-sm text-slate-600">Promise&lt;ConnectWalletResponse&gt;</td>
                           <td className="px-4 py-3 text-sm text-slate-600">Connects to a Solana wallet</td>
                         </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">disconnectWallet</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string (publicKey)</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Promise&lt;boolean&gt;</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Disconnects a previously connected wallet</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">getTokenBalances</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string (publicKey)</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Promise&lt;TokenBalanceResponse&gt;</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Retrieves token balances for a connected wallet</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">sendTransaction</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string, TransactionParams</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Promise&lt;TransactionResponse&gt;</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Sends a token transaction from a connected wallet</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -1351,6 +1369,92 @@ const claimRewards = async (userId, walletAddress) => {
                   </div>
                 </div>
 
+                <div>
+                  <h3 className="text-lg font-medium mb-2">TransactionParams</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Property</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Required</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-slate-200">
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">to</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Yes</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Recipient wallet address</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">amount</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">number</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Yes</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Amount of tokens to send</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">token</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">No</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Token symbol (default: 'SOL')</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">memo</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">string</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">No</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Optional transaction memo</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">onSuccess</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Function callback</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">No</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Success callback with transaction hash</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">onError</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Function callback</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">No</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Error callback</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-2">TokenBalanceResponse</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Property</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-slate-200">
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">success</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">boolean</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Whether the balance request was successful</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">balances</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Array of token balance objects</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">List of token balances (only present if success is true)</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 text-sm font-medium text-slate-900">error</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">GamiError object</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">Error details (only present if success is false)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <Separator />
 
                 <div>
@@ -1375,6 +1479,33 @@ const claimRewards = async (userId, walletAddress) => {
                       </div>
                       <p className="text-sm text-slate-600 mt-2">
                         Verify wallet connection. Requires X-API-Key header and JSON body with walletType.
+                      </p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center">
+                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">POST</span>
+                        <code className="text-sm font-mono">/api/wallet/balances</code>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2">
+                        Get token balances for a wallet. Requires X-API-Key header and JSON body with publicKey and chainType.
+                      </p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center">
+                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">POST</span>
+                        <code className="text-sm font-mono">/api/transaction</code>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2">
+                        Create a transaction. Requires X-API-Key header and JSON body with fromPublicKey, toAddress, amount, chainType, and token.
+                      </p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center">
+                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-md mr-2">POST</span>
+                        <code className="text-sm font-mono">/api/solana/transaction</code>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2">
+                        Create a Solana-specific transaction. Requires X-API-Key header and JSON body with fromPublicKey, toAddress, amount, and token.
                       </p>
                     </div>
                     <div className="border rounded-lg p-4">
