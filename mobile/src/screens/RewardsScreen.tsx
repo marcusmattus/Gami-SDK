@@ -463,6 +463,78 @@ const RewardsScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Redeem points modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isRedeemModalVisible}
+        onRequestClose={() => setIsRedeemModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Redeem Points</Text>
+            
+            {selectedBalance && (
+              <>
+                <Text style={styles.modalText}>
+                  You have {selectedBalance.balance} points from {selectedBalance.partnerName}
+                </Text>
+                
+                <Text style={styles.inputLabel}>Amount to Redeem</Text>
+                <TextInput
+                  style={styles.redeemInput}
+                  placeholder="Enter amount"
+                  value={redeemAmount}
+                  onChangeText={setRedeemAmount}
+                  keyboardType="number-pad"
+                />
+                
+                <Text style={styles.inputLabel}>Redemption Item (Optional)</Text>
+                <TextInput
+                  style={styles.redeemInput}
+                  placeholder="What are you redeeming for?"
+                  value={redeemItem}
+                  onChangeText={setRedeemItem}
+                />
+                
+                <Text style={styles.modalDescription}>
+                  Points will be deducted from your balance and can be used towards rewards
+                </Text>
+              </>
+            )}
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsRedeemModalVisible(false);
+                  setSelectedBalance(null);
+                  setRedeemAmount('');
+                  setRedeemItem('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleRedeemPoints}
+                disabled={isRedeeming}
+              >
+                {isRedeeming ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -577,6 +649,16 @@ const styles = StyleSheet.create({
   balanceInfo: {
     flex: 1,
     marginLeft: 12,
+  },
+  balanceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  redeemText: {
+    fontSize: 14,
+    color: '#7631f9',
+    fontWeight: '600',
+    marginRight: 4,
   },
   partnerName: {
     fontSize: 16,
@@ -805,6 +887,21 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#ffffff',
     fontWeight: '600',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 6,
+    color: '#424242',
+  },
+  redeemInput: {
+    height: 46,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    marginBottom: 16,
   },
 });
 
