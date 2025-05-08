@@ -1,0 +1,50 @@
+# Git and version control
+.git
+.gitignore
+.github
+
+# Build outputs
+dist
+build
+node_modules
+
+# Environment and secrets
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+__tests__
+*.test.ts
+*.test.tsx
+coverage
+
+# Documentation
+README.md
+DEPLOYMENT.md
+LICENSE
+
+# Docker files (prevent recursive copying)
+Dockerfile
+.dockerignore
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

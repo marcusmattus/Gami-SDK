@@ -2,9 +2,71 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { connectToMongoDB } from "./mongo";
+import config from "../shared/config";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import compression from "compression";
+import cors from "cors";
+import winston from "winston";
+
+// Create production-ready logger
+const logger = winston.createLogger({
+  level: config.isProduction ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    }),
+    // In production, add file logging
+    ...(config.isProduction ? [
+      new winston.transports.File({ filename: 'error.log', level: 'error' }),
+      new winston.transports.File({ filename: 'combined.log' })
+    ] : [])
+  ]
+});
 
 const app = express();
-app.use(express.json());
+
+// Security middleware for production
+if (config.isProduction) {
+  // Enable Helmet security headers
+  app.use(helmet());
+  
+  // Enable compression
+  app.use(compression());
+  
+  // Configure CORS for production
+  app.use(cors({
+    origin: config.corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }));
+  
+  // Rate limiting for API requests
+  const apiLimiter = rateLimit({
+    windowMs: config.rateLimits.windowMs,
+    max: config.rateLimits.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+  });
+  
+  // Apply rate limiting to API routes
+  app.use('/api/', apiLimiter);
+} else {
+  // In development, allow all CORS
+  app.use(cors({ origin: '*' }));
+}
+
+// Body parsing middleware
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -30,7 +92,23 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      // Use enhanced logging in production
+      if (config.isProduction) {
+        const logLevel = res.statusCode >= 500 ? 'error' : 
+                        res.statusCode >= 400 ? 'warn' : 'info';
+        
+        logger[logLevel]({
+          method: req.method,
+          path,
+          statusCode: res.statusCode,
+          duration,
+          response: capturedJsonResponse,
+          ip: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+      } else {
+        log(logLine);
+      }
     }
   });
 
