@@ -1,6 +1,14 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+/**
+ * Transaction types for point transactions
+ */
+export enum TransactionType {
+  AWARD = 'award',
+  REDEEM = 'redeem'
+}
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -83,6 +91,63 @@ export const walrusMetadata = pgTable("walrus_metadata", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+/**
+ * Partner business that integrates with Gami
+ */
+export const partners = pgTable("partners", {
+  id: serial("id").primaryKey(),
+  partnerId: varchar("partner_id", { length: 64 }).notNull().unique(),
+  partnerName: varchar("partner_name", { length: 100 }).notNull(),
+  partnerApiKey: varchar("partner_api_key", { length: 64 }).notNull(),
+  deepLinkUrl: text("deep_link_url"),
+  redirectUrl: text("redirect_url"),
+  oauthCallbackUrl: text("oauth_callback_url"),
+  customCssUrl: text("custom_css_url"),
+  logoUrl: text("logo_url"),
+  primaryColor: varchar("primary_color", { length: 20 }),
+  secondaryColor: varchar("secondary_color", { length: 20 }),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+/**
+ * Customer record for partner businesses
+ */
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
+  universalId: varchar("universal_id", { length: 64 }).notNull().unique(),
+  externalCustomerId: varchar("external_customer_id", { length: 100 }).notNull(),
+  partnerId: varchar("partner_id", { length: 64 }).notNull().references(() => partners.partnerId),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  name: varchar("name", { length: 255 }),
+  points: integer("points").default(0).notNull(),
+  walletPublicKey: varchar("wallet_public_key", { length: 255 }),
+  qrCode: text("qr_code"),
+  deepLink: text("deep_link"),
+  metadata: jsonb("metadata"),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+/**
+ * Points transaction record for customer points
+ */
+export const pointsTransactions = pgTable("points_transactions", {
+  id: serial("id").primaryKey(),
+  transferId: varchar("transfer_id", { length: 64 }).notNull().unique(),
+  universalId: varchar("universal_id", { length: 64 }).notNull().references(() => customers.universalId),
+  partnerId: varchar("partner_id", { length: 64 }).notNull(),
+  externalCustomerId: varchar("external_customer_id", { length: 100 }).notNull(),
+  points: integer("points").notNull(),
+  transactionType: varchar("transaction_type", { length: 32 }).notNull(),
+  purpose: varchar("purpose", { length: 64 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
@@ -92,6 +157,17 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({ id: tru
 export const insertWalletIntegrationSchema = createInsertSchema(walletIntegrations).omit({ id: true, createdAt: true });
 export const insertRewardDistributionSchema = createInsertSchema(rewardDistributions).omit({ id: true, createdAt: true });
 export const insertWalrusMetadataSchema = createInsertSchema(walrusMetadata).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPartnerSchema = createInsertSchema(partners).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ 
+  id: true, 
+  qrCode: true, 
+  deepLink: true, 
+  points: true, 
+  lastActivity: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+export const insertPointsTransactionSchema = createInsertSchema(pointsTransactions).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -118,6 +194,15 @@ export type InsertRewardDistribution = z.infer<typeof insertRewardDistributionSc
 export type WalrusMetadata = typeof walrusMetadata.$inferSelect;
 export type InsertWalrusMetadata = z.infer<typeof insertWalrusMetadataSchema>;
 
+export type Partner = typeof partners.$inferSelect;
+export type InsertPartner = z.infer<typeof insertPartnerSchema>;
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
+export type PointsTransaction = typeof pointsTransactions.$inferSelect;
+export type InsertPointsTransaction = z.infer<typeof insertPointsTransactionSchema>;
+
 // API Schemas
 export const trackEventSchema = z.object({
   userId: z.string(),
@@ -127,4 +212,43 @@ export const trackEventSchema = z.object({
 
 export const connectWalletSchema = z.object({
   walletType: z.enum(["phantom", "solflare", "walletconnect"]),
+});
+
+// E-commerce integration schemas
+export const registerPartnerSchema = z.object({
+  partnerApiKey: z.string().min(6),
+  partnerId: z.string().min(4),
+  partnerName: z.string().min(2),
+  deepLinkUrl: z.string().url().optional(),
+  redirectUrl: z.string().url().optional(),
+  oauthCallbackUrl: z.string().url().optional(),
+  customCssUrl: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+});
+
+export const onboardCustomerSchema = z.object({
+  externalCustomerId: z.string().min(1),
+  partnerId: z.string().min(4),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  name: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const awardPointsSchema = z.object({
+  externalCustomerId: z.string().min(1),
+  partnerId: z.string().min(4),
+  points: z.number().int().positive(),
+  transactionType: z.string().min(1),
+  metadata: z.record(z.any()).optional(),
+});
+
+export const redeemPointsSchema = z.object({
+  externalCustomerId: z.string().min(1),
+  partnerId: z.string().min(4),
+  points: z.number().int().positive(),
+  purpose: z.string().min(1),
+  metadata: z.record(z.any()).optional(),
 });
