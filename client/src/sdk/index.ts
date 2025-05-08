@@ -3,6 +3,12 @@ import { EventTracker } from './event-tracker';
 import { WalletConnector, TransactionParams, WalletData } from './wallet-connector';
 import { CrossChainTransfer, CrossChainTransferParams, ChainType } from './cross-chain-transfer';
 import { WalrusStorage, WalrusStorageConfig, StoreOptions } from './walrus-storage';
+import { 
+  EcommerceIntegration, 
+  PartnerOnboardingConfig, 
+  CustomerData,
+  QRFormat
+} from './ecommerce-integration';
 import * as gamification from './gamification';
 
 /**
@@ -15,6 +21,7 @@ export class GamiSDK {
   private walletConnector: WalletConnector;
   private crossChainTransfer: CrossChainTransfer;
   private walrusStorage: WalrusStorage | null = null;
+  private ecommerceIntegration: EcommerceIntegration;
 
   /**
    * Initialize the Gami SDK
@@ -36,6 +43,7 @@ export class GamiSDK {
     this.eventTracker = new EventTracker(this.apiUrl, this.config.apiKey);
     this.walletConnector = new WalletConnector(this.apiUrl, this.config.apiKey);
     this.crossChainTransfer = new CrossChainTransfer(this.apiUrl, this.config.apiKey);
+    this.ecommerceIntegration = new EcommerceIntegration(this.apiUrl, this.config.apiKey);
   }
 
   /**
@@ -291,11 +299,111 @@ export class GamiSDK {
     }
     return this.walrusStorage.getBlobStatus(blobId);
   }
+
+  /**
+   * Register a partner business for e-commerce integration
+   * @param config Partner business configuration
+   * @returns Success status
+   */
+  async registerPartner(config: PartnerOnboardingConfig): Promise<boolean> {
+    return this.ecommerceIntegration.registerPartner(config);
+  }
+
+  /**
+   * Onboard a customer to the Gami Protocol
+   * @param customerData Customer information from partner system
+   * @returns Onboarding response with universal ID and connection methods
+   */
+  async onboardCustomer(customerData: CustomerData) {
+    return this.ecommerceIntegration.onboardCustomer(customerData);
+  }
+
+  /**
+   * Generate a QR code for customer onboarding
+   * @param universalId Universal customer ID
+   * @param format QR code format (svg, png, dataUrl)
+   * @returns QR code data
+   */
+  async generateCustomerQR(universalId: string, format?: QRFormat) {
+    return this.ecommerceIntegration.generateCustomerQR(universalId, format);
+  }
+
+  /**
+   * Get a deep link for the mobile app
+   * @param universalId Universal customer ID
+   * @returns Deep link URL
+   */
+  async getCustomerDeepLink(universalId: string) {
+    return this.ecommerceIntegration.getDeepLink(universalId);
+  }
+
+  /**
+   * Award points to a customer
+   * @param externalCustomerId Customer ID in partner system
+   * @param points Amount of points to award
+   * @param transactionType Transaction type (purchase, reward, etc)
+   * @param metadata Additional transaction data
+   * @returns Point transfer result
+   */
+  async awardCustomerPoints(
+    externalCustomerId: string,
+    points: number,
+    transactionType: string,
+    metadata?: Record<string, any>
+  ) {
+    return this.ecommerceIntegration.awardPoints(
+      externalCustomerId,
+      points,
+      transactionType,
+      metadata
+    );
+  }
+
+  /**
+   * Redeem points from a customer's universal balance
+   * @param externalCustomerId Customer ID in partner system
+   * @param points Amount of points to redeem
+   * @param purpose Purpose of redemption
+   * @param metadata Additional redemption data
+   * @returns Point redemption result
+   */
+  async redeemCustomerPoints(
+    externalCustomerId: string,
+    points: number,
+    purpose: string,
+    metadata?: Record<string, any>
+  ) {
+    return this.ecommerceIntegration.redeemPoints(
+      externalCustomerId,
+      points,
+      purpose,
+      metadata
+    );
+  }
+
+  /**
+   * Get customer points balance
+   * @param externalCustomerId Customer ID in partner system
+   * @returns Current points balance
+   */
+  async getCustomerPointsBalance(externalCustomerId: string) {
+    return this.ecommerceIntegration.getCustomerBalance(externalCustomerId);
+  }
+
+  /**
+   * Check if a customer exists in the universal system
+   * @param externalCustomerId Customer ID in partner system
+   * @returns Whether the customer exists
+   */
+  async customerExists(externalCustomerId: string) {
+    return this.ecommerceIntegration.customerExists(externalCustomerId);
+  }
 }
 
 // Export types
 export * from './types';
 export * from './wallet-connector';
 export * from './cross-chain-transfer';
+export * from './ecommerce-integration';
 export { gamification };
 export * from './walrus-storage';
