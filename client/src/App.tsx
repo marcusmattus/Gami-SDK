@@ -17,6 +17,7 @@ import Settings from "@/pages/settings";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
+import WalletTestPage from "@/pages/wallet-test";
 
 function Router() {
   const [location] = useLocation();
@@ -32,6 +33,7 @@ function Router() {
       <ProtectedRoute path="/analytics" component={Analytics} />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/documentation" component={Documentation} />
+      <Route path="/wallet-test" component={WalletTestPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
