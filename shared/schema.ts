@@ -7,7 +7,11 @@ import { z } from "zod";
  */
 export enum TransactionType {
   AWARD = 'award',
-  REDEEM = 'redeem'
+  REDEEM = 'redeem',
+  SHADOW_AWARD = 'shadow_award',       // Award to customer without app
+  SHADOW_REDEEM = 'shadow_redeem',     // Redeem from customer without app
+  ACCOUNT_ACTIVATION = 'account_activation', // When shadow account is activated
+  POINTS_MIGRATION = 'points_migration'  // When points are migrated to activated account
 }
 
 export const users = pgTable("users", {
@@ -126,6 +130,8 @@ export const customers = pgTable("customers", {
   walletPublicKey: varchar("wallet_public_key", { length: 255 }),
   qrCode: text("qr_code"),
   deepLink: text("deep_link"),
+  claimCode: varchar("claim_code", { length: 16 }), // Code for claiming shadow accounts
+  shadowAccount: boolean("shadow_account").default(false), // Flag for shadow accounts
   metadata: jsonb("metadata"),
   lastActivity: timestamp("last_activity").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -251,4 +257,12 @@ export const redeemPointsSchema = z.object({
   points: z.number().int().positive(),
   purpose: z.string().min(1),
   metadata: z.record(z.any()).optional(),
+});
+
+export const activateShadowAccountSchema = z.object({
+  claimCode: z.string().min(4),
+  walletPublicKey: z.string().min(32),
+  deviceId: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
 });

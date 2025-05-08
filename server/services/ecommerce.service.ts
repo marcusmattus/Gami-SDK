@@ -15,8 +15,6 @@ import {
 } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import QRCode from 'qrcode';
-// Directly import the jsonb type from drizzle-orm
-import { jsonb } from 'drizzle-orm/pg-core';
 
 /**
  * QR code formats that can be generated
@@ -112,10 +110,23 @@ export class EcommerceService {
     // Generate a universal customer ID
     const universalId = `cust_${uuidv4().replace(/-/g, '')}`;
     
+    // Determine if this is a shadow account (no wallet public key)
+    const isShadowAccount = !customerData.walletPublicKey;
+    
+    // Generate a claim code if this is a shadow account
+    const claimCode = isShadowAccount ? this.generateClaimCode() : null;
+    
     // Create complete customer data with generated values
     const completeCustomerData: InsertCustomer = {
       ...customerData,
-      universalId
+      universalId,
+      shadowAccount: isShadowAccount,
+      metadata: {
+        ...customerData.metadata,
+        isShadowAccount,
+        createdAt: new Date().toISOString(),
+        claimNotified: false
+      }
     };
     
     // Insert the customer record
@@ -130,14 +141,32 @@ export class EcommerceService {
     const deepLinkUrl = partner.deepLinkUrl === null ? undefined : partner.deepLinkUrl;
     const deepLink = this.generateDeepLink(universalId, deepLinkUrl);
     
-    // Update the customer record with QR code and deep link
+    // Update the customer record with QR code, deep link, and claim code
     const [updatedCustomer] = await db
       .update(customers)
-      .set({ qrCode, deepLink })
+      .set({ 
+        qrCode, 
+        deepLink,
+        claimCode
+      })
       .where(eq(customers.id, customer.id))
       .returning();
       
     return updatedCustomer;
+  }
+
+  /**
+   * Generate a unique claim code for shadow accounts
+   * @returns A unique 8-character alphanumeric code
+   */
+  private generateClaimCode(): string {
+    // Generate a unique, easy-to-type code for claiming points
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Omitting similar looking characters
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
   }
 
   /**
@@ -173,6 +202,20 @@ export class EcommerceService {
       .select()
       .from(customers)
       .where(eq(customers.universalId, universalId));
+      
+    return customer;
+  }
+
+  /**
+   * Find a customer by claim code
+   * @param claimCode Claim code 
+   * @returns The customer or undefined if not found
+   */
+  async getCustomerByClaimCode(claimCode: string): Promise<Customer | undefined> {
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.claimCode, claimCode));
       
     return customer;
   }
@@ -243,6 +286,11 @@ export class EcommerceService {
       throw new Error(`Customer with external ID ${externalCustomerId} not found for partner ${partnerId}`);
     }
     
+    // For shadow accounts, use SHADOW_AWARD transaction type
+    const effectiveTransactionType = customer.shadowAccount 
+      ? TransactionType.SHADOW_AWARD 
+      : transactionType;
+    
     // Create transaction record
     const transferId = `txn_${uuidv4().replace(/-/g, '')}`;
     
@@ -252,8 +300,11 @@ export class EcommerceService {
       partnerId,
       externalCustomerId,
       points,
-      transactionType,
-      metadata
+      transactionType: effectiveTransactionType,
+      metadata: {
+        ...metadata,
+        isShadowTransaction: customer.shadowAccount
+      }
     };
     
     const [transaction] = await db
@@ -305,6 +356,11 @@ export class EcommerceService {
       throw new Error(`Customer has insufficient points (${customer.points}) to redeem ${points} points`);
     }
     
+    // For shadow accounts, use SHADOW_REDEEM transaction type
+    const effectiveTransactionType = customer.shadowAccount 
+      ? TransactionType.SHADOW_REDEEM 
+      : TransactionType.REDEEM;
+    
     // Create transaction record
     const transferId = `txn_${uuidv4().replace(/-/g, '')}`;
     
@@ -314,9 +370,12 @@ export class EcommerceService {
       partnerId,
       externalCustomerId,
       points: -points, // Negative for redemption
-      transactionType: TransactionType.REDEEM,
+      transactionType: effectiveTransactionType,
       purpose,
-      metadata
+      metadata: {
+        ...metadata,
+        isShadowTransaction: customer.shadowAccount
+      }
     };
     
     const [transaction] = await db
@@ -353,6 +412,135 @@ export class EcommerceService {
   ): Promise<number | null> {
     const customer = await this.getCustomerByExternalId(externalCustomerId, partnerId);
     return customer ? customer.points : null;
+  }
+  
+  /**
+   * Activate a shadow account when a customer downloads the mobile app
+   * @param claimCodeOrUniversalId Claim code or universal ID 
+   * @param walletPublicKey Customer's wallet public key
+   * @param additionalData Additional customer data to update
+   * @returns The activated customer account
+   */
+  async activateShadowAccount(
+    claimCodeOrUniversalId: string,
+    walletPublicKey: string,
+    additionalData: {
+      email?: string;
+      phone?: string;
+      deviceId?: string;
+    } = {}
+  ): Promise<Customer> {
+    // Try to find customer by claim code first
+    let customer = await this.getCustomerByClaimCode(claimCodeOrUniversalId);
+    
+    // If not found by claim code, try universal ID
+    if (!customer) {
+      customer = await this.getCustomerByUniversalId(claimCodeOrUniversalId);
+    }
+    
+    if (!customer) {
+      throw new Error('Invalid claim code or universal ID');
+    }
+    
+    // Check if this is indeed a shadow account
+    if (!customer.shadowAccount) {
+      throw new Error('This account is already activated');
+    }
+    
+    // Update customer metadata with activation information
+    const metadata = customer.metadata || {};
+    metadata.activatedAt = new Date().toISOString();
+    metadata.isShadowAccount = false;
+    
+    if (additionalData.deviceId) {
+      metadata.deviceId = additionalData.deviceId;
+    }
+    
+    // Update customer record
+    const [updatedCustomer] = await db
+      .update(customers)
+      .set({
+        walletPublicKey,
+        shadowAccount: false,
+        claimCode: null, // Clear claim code after activation
+        email: additionalData.email || customer.email,
+        phone: additionalData.phone || customer.phone,
+        metadata,
+        lastActivity: new Date()
+      })
+      .where(eq(customers.id, customer.id))
+      .returning();
+    
+    // Create an activation transaction record
+    const transferId = `txn_${uuidv4().replace(/-/g, '')}`;
+    await db
+      .insert(pointsTransactions)
+      .values({
+        transferId,
+        universalId: customer.universalId,
+        partnerId: customer.partnerId,
+        externalCustomerId: customer.externalCustomerId,
+        points: 0, // No point change for activation
+        transactionType: TransactionType.ACCOUNT_ACTIVATION,
+        metadata: {
+          note: 'Shadow account activated with mobile app',
+          previousPoints: customer.points,
+          activationMethod: 'claim_code'
+        }
+      });
+    
+    return updatedCustomer;
+  }
+  
+  /**
+   * Get all shadow accounts for a partner
+   * @param partnerId Partner ID
+   * @returns List of shadow accounts
+   */
+  async getPartnerShadowAccounts(partnerId: string): Promise<Customer[]> {
+    const shadowAccounts = await db
+      .select()
+      .from(customers)
+      .where(
+        and(
+          eq(customers.partnerId, partnerId),
+          eq(customers.shadowAccount, true)
+        )
+      );
+      
+    return shadowAccounts;
+  }
+  
+  /**
+   * Get transactions for a shadow account
+   * @param universalId Universal customer ID
+   * @returns List of transactions
+   */
+  async getShadowAccountTransactions(universalId: string): Promise<PointsTransaction[]> {
+    const transactions = await db
+      .select()
+      .from(pointsTransactions)
+      .where(eq(pointsTransactions.universalId, universalId));
+      
+    return transactions;
+  }
+  
+  /**
+   * Get migration-ready shadow accounts (with points, not claimed)
+   * @returns List of shadow accounts ready for migration
+   */
+  async getMigrationReadyShadowAccounts(): Promise<Customer[]> {
+    const shadowAccounts = await db
+      .select()
+      .from(customers)
+      .where(
+        and(
+          eq(customers.shadowAccount, true),
+          db.sql`${customers.points} > 0`
+        )
+      );
+      
+    return shadowAccounts;
   }
 }
 
