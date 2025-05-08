@@ -1068,6 +1068,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Activate a shadow account (for customers who didn't have the app when they earned points)
+  apiRouter.post("/customer/activate-shadow-account", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { activateShadowAccountSchema } = await import('@shared/schema');
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const validatedData = activateShadowAccountSchema.parse(req.body);
+      
+      // Activate the shadow account
+      const activatedCustomer = await ecommerceService.activateShadowAccount(
+        validatedData.claimCode,
+        validatedData.walletPublicKey,
+        {
+          email: validatedData.email,
+          phone: validatedData.phone,
+          deviceId: validatedData.deviceId
+        }
+      );
+      
+      res.status(200).json({
+        success: true,
+        universalId: activatedCustomer.universalId,
+        points: activatedCustomer.points,
+        message: 'Shadow account successfully activated and points transferred'
+      });
+    } catch (error) {
+      console.error('Shadow account activation error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'SHADOW_ACCOUNT_ACTIVATION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to activate shadow account'
+        }
+      });
+    }
+  });
+  
+  // Check if a claim code is valid and retrieve info about the shadow account
+  apiRouter.get("/customer/claim-code/:code", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const claimCode = req.params.code;
+      
+      // Get customer by claim code
+      const customer = await ecommerceService.getCustomerByClaimCode(claimCode);
+      
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'CLAIM_CODE_NOT_FOUND',
+            message: 'No shadow account found with this claim code'
+          }
+        });
+      }
+      
+      if (!customer.shadowAccount) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'ACCOUNT_ALREADY_ACTIVATED',
+            message: 'This account has already been activated'
+          }
+        });
+      }
+      
+      // Get partner info
+      const partner = await ecommerceService.getPartnerById(customer.partnerId);
+      
+      res.status(200).json({
+        success: true,
+        points: customer.points,
+        partnerName: partner?.partnerName || 'Unknown Partner',
+        universalId: customer.universalId,
+        pendingActivation: true,
+        lastActivity: customer.lastActivity
+      });
+    } catch (error) {
+      console.error('Claim code validation error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'CLAIM_CODE_VALIDATION_FAILED',
+          message: 'Failed to validate claim code'
+        }
+      });
+    }
+  });
+  
+  // Get shadow accounts for a partner
+  apiRouter.get("/partner/:partnerId/shadow-accounts", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const partnerId = req.params.partnerId;
+      
+      // Get partner
+      const partner = await ecommerceService.getPartnerById(partnerId);
+      if (!partner) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'PARTNER_NOT_FOUND',
+            message: 'Partner not found'
+          }
+        });
+      }
+      
+      // Get shadow accounts
+      const shadowAccounts = await ecommerceService.getPartnerShadowAccounts(partnerId);
+      
+      res.status(200).json({
+        success: true,
+        shadowAccounts: shadowAccounts.map(account => ({
+          universalId: account.universalId,
+          externalCustomerId: account.externalCustomerId,
+          name: account.name,
+          email: account.email,
+          points: account.points,
+          claimCode: account.claimCode,
+          lastActivity: account.lastActivity
+        }))
+      });
+    } catch (error) {
+      console.error('Shadow accounts retrieval error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'SHADOW_ACCOUNTS_RETRIEVAL_FAILED',
+          message: 'Failed to retrieve shadow accounts'
+        }
+      });
+    }
+  });
+  
   apiRouter.get("/customer/exists", apiKeyAuth, async (req: Request, res: Response) => {
     try {
       const { ecommerceService } = await import('./services/ecommerce.service');

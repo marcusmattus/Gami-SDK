@@ -11,7 +11,11 @@ import { apiKeyRequest } from '../lib/api';
  */
 export enum TransactionType {
   AWARD = 'award',
-  REDEEM = 'redeem'
+  REDEEM = 'redeem',
+  SHADOW_AWARD = 'shadow_award',       // Award to customer without app
+  SHADOW_REDEEM = 'shadow_redeem',     // Redeem from customer without app
+  ACCOUNT_ACTIVATION = 'account_activation', // When shadow account is activated
+  POINTS_MIGRATION = 'points_migration'  // When points are migrated to activated account
 }
 
 /**
@@ -63,6 +67,28 @@ export interface RedeemPointsData {
   points: number;
   purpose: string;
   metadata?: Record<string, any>;
+}
+
+/**
+ * Shadow account activation data
+ */
+export interface ShadowAccountActivationData {
+  claimCode: string;
+  walletPublicKey: string;
+  email?: string;
+  phone?: string;
+  deviceId?: string;
+}
+
+/**
+ * Shadow account info
+ */
+export interface ShadowAccountInfo {
+  universalId: string;
+  points: number;
+  partnerName: string;
+  pendingActivation: boolean;
+  lastActivity: string;
 }
 
 /**
@@ -174,6 +200,52 @@ export class EcommerceIntegration {
    */
   async customerExists(externalCustomerId: string, partnerId: string) {
     const response = await apiKeyRequest('GET', `/api/customer/exists?externalCustomerId=${encodeURIComponent(externalCustomerId)}&partnerId=${encodeURIComponent(partnerId)}`, this.apiKey);
+    return await response.json();
+  }
+  
+  /**
+   * Validate and get information about a claim code
+   * @param claimCode Claim code to validate
+   * @returns Information about the shadow account
+   */
+  async validateClaimCode(claimCode: string) {
+    const response = await apiKeyRequest('GET', `/api/customer/claim-code/${encodeURIComponent(claimCode)}`, this.apiKey);
+    return await response.json();
+  }
+  
+  /**
+   * Activate a shadow account
+   * @param data Shadow account activation data
+   * @returns Activated account information
+   */
+  async activateShadowAccount(data: ShadowAccountActivationData) {
+    const response = await apiKeyRequest('POST', '/api/customer/activate-shadow-account', this.apiKey, data);
+    return await response.json();
+  }
+  
+  /**
+   * Get all shadow accounts for a partner
+   * @param partnerId Partner ID
+   * @returns List of shadow accounts
+   */
+  async getPartnerShadowAccounts(partnerId: string) {
+    const response = await apiKeyRequest('GET', `/api/partner/${encodeURIComponent(partnerId)}/shadow-accounts`, this.apiKey);
+    return await response.json();
+  }
+  
+  /**
+   * Create a customer profile for automated onboarding
+   * This is used when a customer doesn't have the app yet. The system will create
+   * a shadow account and generate a claim code that can be used later to claim all
+   * accumulated points when the customer downloads the app.
+   * 
+   * @param data Customer onboarding data (without wallet address)
+   * @returns Shadow customer profile with claim code
+   */
+  async createShadowCustomer(data: Omit<CustomerOnboardingData, 'walletPublicKey'>) {
+    // Ensure walletPublicKey is undefined to trigger shadow account creation
+    const shadowData = { ...data, walletPublicKey: undefined };
+    const response = await apiKeyRequest('POST', '/api/customer/onboard', this.apiKey, shadowData);
     return await response.json();
   }
 }
