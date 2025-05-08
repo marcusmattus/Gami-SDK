@@ -12,12 +12,13 @@ import { useGamiSDK } from '../hooks/useGamiSDK';
 import { useAuth } from '../hooks/useAuth';
 import { usePoints } from '../hooks/usePoints';
 import { useNavigation } from '@react-navigation/native';
+import { TabStackParamList } from '../types/navigation';
 
 const DashboardScreen = () => {
   const { userProfile, isLoading: sdkLoading, error: sdkError, fetchUserProfile } = useGamiSDK();
   const { user } = useAuth();
   const { balances, totalPoints, isLoading: pointsLoading, error: pointsError, fetchBalances, shadowAccounts, fetchShadowAccounts } = usePoints();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     fetchUserProfile();
@@ -486,6 +487,87 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  totalPointsContainer: {
+    backgroundColor: '#f8f4ff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  totalPointsLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  totalPointsValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#7631F9',
+  },
+  pointsItem: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 15,
+  },
+  pointsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  pointsIconText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#7631F9',
+  },
+  pointsDetails: {
+    flex: 1,
+  },
+  partnerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  pointsBalance: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  partnerLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0ff',
+  },
+  shadowNoticeContainer: {
+    backgroundColor: '#FFF9C4',
+    borderRadius: 8,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shadowNoticeText: {
+    fontSize: 14,
+    color: '#795548',
+    flex: 1,
+  },
+  claimButton: {
+    backgroundColor: '#7631F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  claimButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });
 
