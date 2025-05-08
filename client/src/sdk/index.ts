@@ -46,7 +46,7 @@ export class GamiSDK {
     this.eventTracker = new EventTracker(this.apiUrl, this.config.apiKey);
     this.walletConnector = new WalletConnector(this.apiUrl, this.config.apiKey);
     this.crossChainTransfer = new CrossChainTransfer(this.apiUrl, this.config.apiKey);
-    this.ecommerceIntegration = new EcommerceIntegration(this.apiUrl, this.config.apiKey);
+    this.ecommerceIntegration = new EcommerceIntegration(this.config.apiKey);
   }
 
   /**
@@ -305,20 +305,20 @@ export class GamiSDK {
 
   /**
    * Register a partner business for e-commerce integration
-   * @param config Partner business configuration
-   * @returns Success status
+   * @param data Partner registration data
+   * @returns Partner registration response
    */
-  async registerPartner(config: PartnerOnboardingConfig): Promise<boolean> {
-    return this.ecommerceIntegration.registerPartner(config);
+  async registerPartner(data: PartnerRegistrationData) {
+    return this.ecommerceIntegration.registerPartner(data);
   }
 
   /**
-   * Onboard a customer to the Gami Protocol
-   * @param customerData Customer information from partner system
-   * @returns Onboarding response with universal ID and connection methods
+   * Onboard a new customer from a partner
+   * @param data Customer onboarding data
+   * @returns Customer onboarding response with QR code and deep link
    */
-  async onboardCustomer(customerData: CustomerData) {
-    return this.ecommerceIntegration.onboardCustomer(customerData);
+  async onboardCustomer(data: CustomerOnboardingData) {
+    return this.ecommerceIntegration.onboardCustomer(data);
   }
 
   /**
@@ -327,79 +327,55 @@ export class GamiSDK {
    * @param format QR code format (svg, png, dataUrl)
    * @returns QR code data
    */
-  async generateCustomerQR(universalId: string, format?: QRFormat) {
-    return this.ecommerceIntegration.generateCustomerQR(universalId, format);
+  async generateQRCode(universalId: string, format?: QRFormat) {
+    return this.ecommerceIntegration.generateQRCode(universalId, format);
   }
 
   /**
-   * Get a deep link for the mobile app
+   * Generate a deep link for the mobile app
    * @param universalId Universal customer ID
    * @returns Deep link URL
    */
-  async getCustomerDeepLink(universalId: string) {
-    return this.ecommerceIntegration.getDeepLink(universalId);
+  async generateDeepLink(universalId: string) {
+    return this.ecommerceIntegration.generateDeepLink(universalId);
   }
 
   /**
    * Award points to a customer
-   * @param externalCustomerId Customer ID in partner system
-   * @param points Amount of points to award
-   * @param transactionType Transaction type (purchase, reward, etc)
-   * @param metadata Additional transaction data
-   * @returns Point transfer result
+   * @param data Award points data
+   * @returns Transaction response with updated balance
    */
-  async awardCustomerPoints(
-    externalCustomerId: string,
-    points: number,
-    transactionType: string,
-    metadata?: Record<string, any>
-  ) {
-    return this.ecommerceIntegration.awardPoints(
-      externalCustomerId,
-      points,
-      transactionType,
-      metadata
-    );
+  async awardPoints(data: AwardPointsData) {
+    return this.ecommerceIntegration.awardPoints(data);
   }
 
   /**
-   * Redeem points from a customer's universal balance
-   * @param externalCustomerId Customer ID in partner system
-   * @param points Amount of points to redeem
-   * @param purpose Purpose of redemption
-   * @param metadata Additional redemption data
-   * @returns Point redemption result
+   * Redeem points from a customer's balance
+   * @param data Redeem points data
+   * @returns Transaction response with updated balance
    */
-  async redeemCustomerPoints(
-    externalCustomerId: string,
-    points: number,
-    purpose: string,
-    metadata?: Record<string, any>
-  ) {
-    return this.ecommerceIntegration.redeemPoints(
-      externalCustomerId,
-      points,
-      purpose,
-      metadata
-    );
+  async redeemPoints(data: RedeemPointsData) {
+    return this.ecommerceIntegration.redeemPoints(data);
   }
 
   /**
-   * Get customer points balance
-   * @param externalCustomerId Customer ID in partner system
+   * Get a customer's points balance
+   * @param externalCustomerId External customer ID
+   * @param partnerId Partner ID
    * @returns Current points balance
    */
-  async getCustomerPointsBalance(externalCustomerId: string) {
-    return this.ecommerceIntegration.getCustomerBalance(externalCustomerId);
+  async getCustomerBalance(externalCustomerId: string, partnerId: string) {
+    return this.ecommerceIntegration.getCustomerBalance(externalCustomerId, partnerId);
   }
 
   /**
-   * Check if a customer exists in the universal system
-   * @param externalCustomerId Customer ID in partner system
+   * Check if a customer exists
+   * @param externalCustomerId External customer ID
+   * @param partnerId Partner ID
    * @returns Whether the customer exists
    */
-  async customerExists(externalCustomerId: string) {
-    return this.ecommerceIntegration.customerExists(externalCustomerId);
+  async customerExists(externalCustomerId: string, partnerId: string) {
+    return this.ecommerceIntegration.customerExists(externalCustomerId, partnerId);
   }
 }
 
