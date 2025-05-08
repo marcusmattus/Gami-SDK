@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { EcommerceIntegration, PartnerRegistrationData, CustomerOnboardingData, AwardPointsData, RedeemPointsData } from '../sdk/ecommerce-integration';
+import { 
+  EcommerceIntegration, 
+  PartnerRegistrationData, 
+  CustomerOnboardingData, 
+  AwardPointsData, 
+  RedeemPointsData,
+  TransactionType
+} from '../sdk/ecommerce-integration';
 
 export default function EcommercePage() {
   const { toast } = useToast();
@@ -886,7 +893,7 @@ export default function EcommercePage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Basic Usage</h3>
                 <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { EcommerceIntegration } from '@gami-protocol/sdk';
+                  <code>{`import { EcommerceIntegration, TransactionType } from '@gami-protocol/sdk';
 
 // Initialize the SDK
 const sdk = new EcommerceIntegration('your-api-key');
@@ -910,6 +917,22 @@ const awardResult = await sdk.awardPoints({
   partnerId: partner.partnerId,
   externalCustomerId: 'customer_123',
   points: 100
+});
+
+// Create a shadow customer (for users without the app)
+const shadowCustomer = await sdk.createShadowCustomer({
+  partnerId: partner.partnerId,
+  externalCustomerId: 'shadow_customer_456',
+  name: 'Jane Smith',
+  email: 'jane@example.com'
+});
+
+// Award points to a shadow account
+const shadowAwardResult = await sdk.awardPoints({
+  partnerId: partner.partnerId,
+  externalCustomerId: 'shadow_customer_456',
+  points: 75,
+  transactionType: TransactionType.SHADOW_AWARD
 });
 
 // Redeem points
@@ -990,7 +1013,70 @@ const exists = await sdk.customerExists(
                     <h4 className="font-medium">customerExists(externalCustomerId, partnerId)</h4>
                     <p className="text-sm text-gray-600">Check if a customer exists in the universal system.</p>
                   </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-medium">createShadowCustomer(data)</h4>
+                    <p className="text-sm text-gray-600">Create a shadow account for customers who don't have the mobile app yet.</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-medium">validateClaimCode(claimCode)</h4>
+                    <p className="text-sm text-gray-600">Validate a claim code and get information about the associated shadow account.</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-medium">activateShadowAccount(data)</h4>
+                    <p className="text-sm text-gray-600">Activate a shadow account and migrate accumulated points to a real account.</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-medium">getPartnerShadowAccounts(partnerId)</h4>
+                    <p className="text-sm text-gray-600">Get all shadow accounts for a partner business.</p>
+                  </div>
                 </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium mb-2">Shadow Account Example</h3>
+                <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+                  <code>{`// Create a shadow customer (without wallet)
+const shadowCustomer = await sdk.createShadowCustomer({
+  partnerId: 'partner_123',
+  externalCustomerId: 'customer_456',
+  name: 'Jane Smith',
+  email: 'jane@example.com'
+});
+
+// Share the claim code with the customer
+const claimCode = shadowCustomer.claimCode;
+
+// Award points to shadow account
+const awardResult = await sdk.awardPoints({
+  partnerId: 'partner_123',
+  externalCustomerId: 'customer_456',
+  points: 100,
+  transactionType: TransactionType.SHADOW_AWARD
+});
+
+// Later, when the customer downloads the app:
+// Validate a claim code
+const claimInfo = await sdk.validateClaimCode('ABCD-1234-EFGH-5678');
+
+// Activate the shadow account with wallet
+const activationResult = await sdk.activateShadowAccount({
+  claimCode: 'ABCD-1234-EFGH-5678',
+  walletPublicKey: '9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xKYP6PhvYe9hqT',
+  email: 'jane@example.com'
+});`}</code>
+                </pre>
               </div>
             </CardContent>
           </Card>
