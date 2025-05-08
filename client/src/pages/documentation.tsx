@@ -597,6 +597,172 @@ await gamiSDK.connectWallet({
                     The SDK automatically checks if the selected wallet is installed. If not, it will prompt users to install the appropriate wallet extension.
                   </AlertDescription>
                 </Alert>
+                
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Disconnecting a Wallet</h3>
+                  <p className="text-slate-600 mb-4">
+                    You can disconnect a wallet using the <code>disconnectWallet</code> method:
+                  </p>
+                  <div className="bg-slate-800 text-slate-100 rounded-md p-4 font-mono text-sm overflow-x-auto">
+                    <pre>{`// Disconnect a wallet using its public key
+const success = await gamiSDK.disconnectWallet(publicKey);
+
+if (success) {
+  console.log('Wallet disconnected successfully');
+  // Update your UI or state
+} else {
+  console.error('Failed to disconnect wallet');
+}`}</pre>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="mt-2 text-primary-500 hover:text-primary-600"
+                    onClick={() => copyToClipboard(`// Disconnect a wallet using its public key
+const success = await gamiSDK.disconnectWallet(publicKey);
+
+if (success) {
+  console.log('Wallet disconnected successfully');
+  // Update your UI or state
+} else {
+  console.error('Failed to disconnect wallet');
+}`, "disconnect-wallet")}
+                  >
+                    {copiedSnippet === "disconnect-wallet" ? (
+                      <>
+                        <FaCheck className="mr-2 h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy className="mr-2 h-4 w-4" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Getting Token Balances</h3>
+                  <p className="text-slate-600 mb-4">
+                    Once a wallet is connected, you can retrieve token balances:
+                  </p>
+                  <div className="bg-slate-800 text-slate-100 rounded-md p-4 font-mono text-sm overflow-x-auto">
+                    <pre>{`// Get token balances for a connected wallet
+const result = await gamiSDK.getTokenBalances(publicKey);
+
+if (result.success) {
+  const balances = result.balances;
+  console.log('Token balances:', balances);
+  
+  // Example of displaying balances
+  balances.forEach(token => {
+    console.log(\`\${token.token}: \${token.amount} (\$\${token.usdValue})\`);
+  });
+} else {
+  console.error('Failed to get balances:', result.error);
+}`}</pre>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="mt-2 text-primary-500 hover:text-primary-600"
+                    onClick={() => copyToClipboard(`// Get token balances for a connected wallet
+const result = await gamiSDK.getTokenBalances(publicKey);
+
+if (result.success) {
+  const balances = result.balances;
+  console.log('Token balances:', balances);
+  
+  // Example of displaying balances
+  balances.forEach(token => {
+    console.log(\`\${token.token}: \${token.amount} (\$\${token.usdValue})\`);
+  });
+} else {
+  console.error('Failed to get balances:', result.error);
+}`, "get-balances")}
+                  >
+                    {copiedSnippet === "get-balances" ? (
+                      <>
+                        <FaCheck className="mr-2 h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy className="mr-2 h-4 w-4" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Sending Transactions</h3>
+                  <p className="text-slate-600 mb-4">
+                    Send tokens from a connected wallet:
+                  </p>
+                  <div className="bg-slate-800 text-slate-100 rounded-md p-4 font-mono text-sm overflow-x-auto">
+                    <pre>{`// Send tokens from a connected wallet
+const result = await gamiSDK.sendTransaction(publicKey, {
+  to: 'recipient-wallet-address',
+  amount: 10.5,
+  token: 'GAMI', // or 'SOL' for native Solana tokens
+  memo: 'Optional transaction memo',
+  onSuccess: (txHash) => {
+    console.log('Transaction successful:', txHash);
+    // Show success message to user
+  },
+  onError: (error) => {
+    console.error('Transaction failed:', error);
+    // Show error message to user
+  }
+});
+
+if (result.success) {
+  console.log('Transaction initiated:', result.txHash);
+} else {
+  console.error('Failed to initiate transaction:', result.error);
+}`}</pre>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="mt-2 text-primary-500 hover:text-primary-600"
+                    onClick={() => copyToClipboard(`// Send tokens from a connected wallet
+const result = await gamiSDK.sendTransaction(publicKey, {
+  to: 'recipient-wallet-address',
+  amount: 10.5,
+  token: 'GAMI', // or 'SOL' for native Solana tokens
+  memo: 'Optional transaction memo',
+  onSuccess: (txHash) => {
+    console.log('Transaction successful:', txHash);
+    // Show success message to user
+  },
+  onError: (error) => {
+    console.error('Transaction failed:', error);
+    // Show error message to user
+  }
+});
+
+if (result.success) {
+  console.log('Transaction initiated:', result.txHash);
+} else {
+  console.error('Failed to initiate transaction:', result.error);
+}`, "send-transaction")}
+                  >
+                    {copiedSnippet === "send-transaction" ? (
+                      <>
+                        <FaCheck className="mr-2 h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy className="mr-2 h-4 w-4" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
 
                 <div>
                   <h3 className="text-lg font-medium mb-2">Creating a Wallet Connect Button</h3>
