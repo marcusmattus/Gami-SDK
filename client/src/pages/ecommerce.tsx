@@ -31,6 +31,12 @@ export default function EcommercePage() {
   const [universalId, setUniversalId] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [deepLink, setDeepLink] = useState('');
+  
+  // Shadow account
+  const [claimCode, setClaimCode] = useState('');
+  const [walletPublicKey, setWalletPublicKey] = useState('');
+  const [shadowAccountInfo, setShadowAccountInfo] = useState<{ points: number; partnerName: string; universalId: string } | null>(null);
+  const [shadowPartnerId, setShadowPartnerId] = useState('');
 
   // Initialize SDK
   const initializeSDK = () => {
@@ -273,6 +279,176 @@ export default function EcommercePage() {
       });
     }
   };
+  
+  // Create a shadow customer (customer without app)
+  const createShadowCustomer = async () => {
+    if (!sdkInstance) {
+      toast({
+        title: 'SDK Not Initialized',
+        description: 'Please initialize the SDK first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!partnerId || !externalCustomerId) {
+      toast({
+        title: 'Required Fields Missing',
+        description: 'Partner ID and External Customer ID are required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const customerData = {
+        partnerId,
+        externalCustomerId,
+        name: customerName || undefined,
+        email: customerEmail || undefined
+      };
+
+      const result = await sdkInstance.createShadowCustomer(customerData);
+      
+      toast({
+        title: 'Shadow Customer Created',
+        description: `Claim Code: ${result.claimCode}`,
+      });
+      
+      // Set the claim code for later use
+      setClaimCode(result.claimCode);
+    } catch (error) {
+      toast({
+        title: 'Shadow Customer Creation Failed',
+        description: error instanceof Error ? error.message : 'Failed to create shadow customer',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Validate a claim code
+  const validateClaimCode = async () => {
+    if (!sdkInstance) {
+      toast({
+        title: 'SDK Not Initialized',
+        description: 'Please initialize the SDK first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!claimCode) {
+      toast({
+        title: 'Claim Code Required',
+        description: 'Please enter a claim code',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const result = await sdkInstance.validateClaimCode(claimCode);
+      
+      toast({
+        title: 'Claim Code Valid',
+        description: `${result.points} points available from ${result.partnerName}`,
+      });
+      
+      // Store the shadow account info
+      setShadowAccountInfo(result);
+    } catch (error) {
+      toast({
+        title: 'Claim Code Invalid',
+        description: error instanceof Error ? error.message : 'Failed to validate claim code',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Activate a shadow account
+  const activateShadowAccount = async () => {
+    if (!sdkInstance) {
+      toast({
+        title: 'SDK Not Initialized',
+        description: 'Please initialize the SDK first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!claimCode || !walletPublicKey) {
+      toast({
+        title: 'Required Fields Missing',
+        description: 'Claim Code and Wallet Public Key are required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const activationData = {
+        claimCode,
+        walletPublicKey,
+        email: customerEmail || undefined
+      };
+
+      const result = await sdkInstance.activateShadowAccount(activationData);
+      
+      toast({
+        title: 'Account Activated',
+        description: `${result.points} points migrated to your account`,
+      });
+      
+      // Clear the shadow account info
+      setShadowAccountInfo(null);
+      setClaimCode('');
+    } catch (error) {
+      toast({
+        title: 'Activation Failed',
+        description: error instanceof Error ? error.message : 'Failed to activate shadow account',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Get all shadow accounts for a partner
+  const getShadowAccounts = async () => {
+    if (!sdkInstance) {
+      toast({
+        title: 'SDK Not Initialized',
+        description: 'Please initialize the SDK first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!shadowPartnerId) {
+      toast({
+        title: 'Partner ID Required',
+        description: 'Please enter a partner ID',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const result = await sdkInstance.getPartnerShadowAccounts(shadowPartnerId);
+      
+      toast({
+        title: 'Shadow Accounts Retrieved',
+        description: `Found ${result.accounts.length} shadow accounts`,
+      });
+      
+      // You can display the list of shadow accounts in the UI
+      console.log('Shadow accounts:', result.accounts);
+    } catch (error) {
+      toast({
+        title: 'Retrieval Failed',
+        description: error instanceof Error ? error.message : 'Failed to get shadow accounts',
+        variant: 'destructive'
+      });
+    }
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -297,10 +473,11 @@ export default function EcommercePage() {
       </Card>
       
       <Tabs defaultValue="partner" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="partner">Register Partner</TabsTrigger>
           <TabsTrigger value="customer">Onboard Customer</TabsTrigger>
           <TabsTrigger value="points">Manage Points</TabsTrigger>
+          <TabsTrigger value="shadow">Shadow Accounts</TabsTrigger>
           <TabsTrigger value="qr">QR & Deep Links</TabsTrigger>
           <TabsTrigger value="docs">Documentation</TabsTrigger>
         </TabsList>
@@ -452,6 +629,179 @@ export default function EcommercePage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="shadow">
+          <div className="grid grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Shadow Customer</CardTitle>
+                <CardDescription>Create a customer profile for users who don't have the app yet</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shadowPartnerId">Partner ID</Label>
+                      <Input
+                        id="shadowPartnerId"
+                        value={partnerId}
+                        onChange={(e) => setPartnerId(e.target.value)}
+                        placeholder="partner_123"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="shadowCustomerId">External Customer ID</Label>
+                      <Input
+                        id="shadowCustomerId"
+                        value={externalCustomerId}
+                        onChange={(e) => setExternalCustomerId(e.target.value)}
+                        placeholder="customer_456"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shadowName">Customer Name (Optional)</Label>
+                      <Input
+                        id="shadowName"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="shadowEmail">Customer Email (Optional)</Label>
+                      <Input
+                        id="shadowEmail"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <Button onClick={createShadowCustomer} className="w-full">Create Shadow Customer</Button>
+                
+                {claimCode && (
+                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="font-medium text-green-800 mb-2">Shadow Account Created!</h4>
+                    <p className="text-sm text-green-700 mb-2">
+                      The customer can now earn points without having the app. Share the claim code with them to activate later:
+                    </p>
+                    <div className="bg-white p-3 rounded flex items-center justify-between">
+                      <code className="font-mono text-sm">{claimCode}</code>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(claimCode);
+                          toast({
+                            title: 'Claim Code Copied',
+                            description: 'The claim code has been copied to your clipboard'
+                          });
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Activate Shadow Account</CardTitle>
+                <CardDescription>Activate a shadow account by claiming accumulated points</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="claimCode">Claim Code</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="claimCode"
+                        value={claimCode}
+                        onChange={(e) => setClaimCode(e.target.value)}
+                        placeholder="ABCD-1234-EFGH-5678"
+                        className="flex-1"
+                      />
+                      <Button onClick={validateClaimCode} variant="outline">Validate</Button>
+                    </div>
+                  </div>
+                  
+                  {shadowAccountInfo && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-800 mb-2">Valid Claim Code!</h4>
+                      <p className="text-sm text-blue-700">
+                        {shadowAccountInfo.points} points available from {shadowAccountInfo.partnerName}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="walletPublicKey">Wallet Public Key</Label>
+                    <Input
+                      id="walletPublicKey"
+                      value={walletPublicKey}
+                      onChange={(e) => setWalletPublicKey(e.target.value)}
+                      placeholder="Enter your Solana wallet public key"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="activationEmail">Email (Optional)</Label>
+                    <Input
+                      id="activationEmail"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={activateShadowAccount} 
+                  className="w-full"
+                  disabled={!shadowAccountInfo}
+                >
+                  Activate & Claim Points
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-2">
+              <CardHeader>
+                <CardTitle>Manage Shadow Accounts</CardTitle>
+                <CardDescription>View and manage shadow accounts for a partner</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="space-y-2 flex-1">
+                    <Label htmlFor="partnerShadowId">Partner ID</Label>
+                    <Input
+                      id="partnerShadowId"
+                      value={shadowPartnerId}
+                      onChange={(e) => setShadowPartnerId(e.target.value)}
+                      placeholder="partner_123"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={getShadowAccounts}>View Shadow Accounts</Button>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-gray-500">
+                  Shadow accounts data will be displayed in the developer console for now.
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="qr">
