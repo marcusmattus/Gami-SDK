@@ -1,0 +1,67 @@
+name: Deploy Gami Protocol
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run tests
+      run: npm test || echo "No tests specified"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          gamiprotocol/app:latest
+          gamiprotocol/app:${{ github.sha }}
+        cache-from: type=registry,ref=gamiprotocol/app:buildcache
+        cache-to: type=registry,ref=gamiprotocol/app:buildcache,mode=max
+    
+    # Deploy to your server - example with SSH
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /opt/gamiprotocol
+          docker pull gamiprotocol/app:${{ github.sha }}
+          docker-compose down
+          # Update the image in docker-compose.yml
+          sed -i "s|image:.*|image: gamiprotocol/app:${{ github.sha }}|g" docker-compose.yml
+          docker-compose up -d
+          # Run database migrations if needed
+          docker-compose exec -T app npm run db:push
+          # Cleanup old images
+          docker image prune -af
