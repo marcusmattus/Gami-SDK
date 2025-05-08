@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { FaHome, FaCode, FaTrophy, FaWallet, FaRocket, FaChartBar, FaCog, FaBook } from "react-icons/fa";
+import { FaHome, FaCode, FaTrophy, FaWallet, FaRocket, FaChartBar, FaCog, FaBook, FaShoppingCart } from "react-icons/fa";
 
 interface SidebarLink {
   href: string;
@@ -17,6 +17,7 @@ const navLinks: SidebarLink[] = [
   { href: "/sdk-config", icon: <FaCode className="w-5 h-5" />, label: "SDK Configuration" },
   { href: "/xp-management", icon: <FaTrophy className="w-5 h-5" />, label: "XP Management" },
   { href: "/wallet-integration", icon: <FaWallet className="w-5 h-5" />, label: "Wallet Integration" },
+  { href: "/ecommerce", icon: <FaShoppingCart className="w-5 h-5" />, label: "E-commerce" },
   { href: "/campaigns", icon: <FaRocket className="w-5 h-5" />, label: "Campaigns" },
   { href: "/analytics", icon: <FaChartBar className="w-5 h-5" />, label: "Analytics" },
   { href: "/settings", icon: <FaCog className="w-5 h-5" />, label: "Settings" },

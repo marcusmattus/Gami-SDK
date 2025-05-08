@@ -18,6 +18,7 @@ import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 import WalletTestPage from "@/pages/wallet-test";
+import EcommercePage from "@/pages/ecommerce";
 
 function Router() {
   const [location] = useLocation();
@@ -33,6 +34,7 @@ function Router() {
       <ProtectedRoute path="/analytics" component={Analytics} />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/documentation" component={Documentation} />
+      <ProtectedRoute path="/ecommerce" component={EcommercePage} />
       <Route path="/wallet-test" component={WalletTestPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
