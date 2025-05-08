@@ -827,6 +827,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // E-commerce integration endpoints
+  apiRouter.post("/partner/register", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { registerPartnerSchema } = await import('@shared/schema');
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const validatedData = registerPartnerSchema.parse(req.body);
+      const partner = await ecommerceService.registerPartner(validatedData);
+      
+      res.status(201).json({
+        success: true,
+        partner: {
+          id: partner.id,
+          partnerId: partner.partnerId,
+          partnerName: partner.partnerName
+        }
+      });
+    } catch (error) {
+      console.error('Partner registration error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'PARTNER_REGISTRATION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to register partner'
+        }
+      });
+    }
+  });
+
+  apiRouter.post("/customer/onboard", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { onboardCustomerSchema } = await import('@shared/schema');
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const validatedData = onboardCustomerSchema.parse(req.body);
+      const customer = await ecommerceService.onboardCustomer(validatedData);
+      
+      res.status(201).json({
+        success: true,
+        customerId: customer.id,
+        universalId: customer.universalId,
+        qrCode: customer.qrCode,
+        deepLink: customer.deepLink
+      });
+    } catch (error) {
+      console.error('Customer onboarding error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CUSTOMER_ONBOARDING_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to onboard customer'
+        }
+      });
+    }
+  });
+
+  apiRouter.get("/customer/:universalId/qr", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const universalId = req.params.universalId;
+      const format = req.query.format as 'svg' | 'png' | 'dataUrl' || 'svg';
+      
+      const customer = await ecommerceService.getCustomerByUniversalId(universalId);
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'CUSTOMER_NOT_FOUND',
+            message: 'Customer not found'
+          }
+        });
+      }
+      
+      const qrCode = await ecommerceService.generateQRCode(universalId, format);
+      
+      res.status(200).json({
+        success: true,
+        qrCode
+      });
+    } catch (error) {
+      console.error('QR code generation error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'QR_GENERATION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to generate QR code'
+        }
+      });
+    }
+  });
+
+  apiRouter.get("/customer/:universalId/deeplink", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const universalId = req.params.universalId;
+      
+      const customer = await ecommerceService.getCustomerByUniversalId(universalId);
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'CUSTOMER_NOT_FOUND',
+            message: 'Customer not found'
+          }
+        });
+      }
+      
+      const partner = await ecommerceService.getPartnerById(customer.partnerId);
+      const deepLink = ecommerceService.generateDeepLink(universalId, partner?.deepLinkUrl);
+      
+      res.status(200).json({
+        success: true,
+        deepLink
+      });
+    } catch (error) {
+      console.error('Deep link generation error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'DEEP_LINK_GENERATION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to generate deep link'
+        }
+      });
+    }
+  });
+  
+  apiRouter.post("/points/award", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { awardPointsSchema } = await import('@shared/schema');
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const validatedData = awardPointsSchema.parse(req.body);
+      
+      const result = await ecommerceService.awardPoints(
+        validatedData.externalCustomerId,
+        validatedData.partnerId,
+        validatedData.points,
+        validatedData.transactionType,
+        validatedData.metadata
+      );
+      
+      res.status(200).json({
+        success: true,
+        transferId: result.transaction.transferId,
+        pointsAmount: validatedData.points,
+        balance: result.balance
+      });
+    } catch (error) {
+      console.error('Points award error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'POINTS_AWARD_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to award points'
+        }
+      });
+    }
+  });
+  
+  apiRouter.post("/points/redeem", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { redeemPointsSchema } = await import('@shared/schema');
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const validatedData = redeemPointsSchema.parse(req.body);
+      
+      const result = await ecommerceService.redeemPoints(
+        validatedData.externalCustomerId,
+        validatedData.partnerId,
+        validatedData.points,
+        validatedData.purpose,
+        validatedData.metadata
+      );
+      
+      res.status(200).json({
+        success: true,
+        transferId: result.transaction.transferId,
+        pointsAmount: validatedData.points,
+        balance: result.balance
+      });
+    } catch (error) {
+      console.error('Points redemption error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'POINTS_REDEMPTION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to redeem points'
+        }
+      });
+    }
+  });
+  
+  apiRouter.get("/customer/balance", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const externalCustomerId = req.query.externalCustomerId as string;
+      const partnerId = req.query.partnerId as string;
+      
+      if (!externalCustomerId || !partnerId) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_PARAMETERS',
+            message: 'externalCustomerId and partnerId are required'
+          }
+        });
+      }
+      
+      const balance = await ecommerceService.getCustomerBalance(externalCustomerId, partnerId);
+      
+      if (balance === null) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'CUSTOMER_NOT_FOUND',
+            message: 'Customer not found'
+          }
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        balance
+      });
+    } catch (error) {
+      console.error('Balance check error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'BALANCE_CHECK_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to check balance'
+        }
+      });
+    }
+  });
+  
+  apiRouter.get("/customer/exists", apiKeyAuth, async (req: Request, res: Response) => {
+    try {
+      const { ecommerceService } = await import('./services/ecommerce.service');
+      
+      const externalCustomerId = req.query.externalCustomerId as string;
+      const partnerId = req.query.partnerId as string;
+      
+      if (!externalCustomerId || !partnerId) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_PARAMETERS',
+            message: 'externalCustomerId and partnerId are required'
+          }
+        });
+      }
+      
+      const exists = await ecommerceService.customerExists(externalCustomerId, partnerId);
+      
+      res.status(200).json({
+        success: true,
+        exists
+      });
+    } catch (error) {
+      console.error('Customer check error:', error);
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CUSTOMER_CHECK_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to check customer'
+        }
+      });
+    }
+  });
+  
   // Get user profile with achievements and inventory
   apiRouter.get("/users/:externalUserId/profile", apiKeyAuth, async (req: Request, res: Response) => {
     try {
