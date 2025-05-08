@@ -6,10 +6,12 @@ import DashboardScreen from '../screens/DashboardScreen';
 import WalletScreen from '../screens/WalletScreen';
 import AchievementsScreen from '../screens/AchievementsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import RewardsScreen from '../screens/RewardsScreen';
 
 export type TabStackParamList = {
   Dashboard: undefined;
   Wallet: undefined;
+  Rewards: undefined;
   Achievements: undefined;
   Profile: undefined;
 };
@@ -27,6 +29,8 @@ const TabNavigator = () => {
             iconName = focused ? 'ios-home' : 'ios-home-outline';
           } else if (route.name === 'Wallet') {
             iconName = focused ? 'ios-wallet' : 'ios-wallet-outline';
+          } else if (route.name === 'Rewards') {
+            iconName = focused ? 'ios-gift' : 'ios-gift-outline';
           } else if (route.name === 'Achievements') {
             iconName = focused ? 'ios-trophy' : 'ios-trophy-outline';
           } else if (route.name === 'Profile') {
@@ -55,6 +59,13 @@ const TabNavigator = () => {
         component={WalletScreen} 
         options={{
           title: 'Wallet'
+        }}
+      />
+      <Tab.Screen 
+        name="Rewards" 
+        component={RewardsScreen} 
+        options={{
+          title: 'Rewards'
         }}
       />
       <Tab.Screen 

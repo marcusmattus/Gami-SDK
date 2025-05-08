@@ -5,17 +5,24 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Image
 } from 'react-native';
 import { useGamiSDK } from '../hooks/useGamiSDK';
 import { useAuth } from '../hooks/useAuth';
+import { usePoints } from '../hooks/usePoints';
+import { useNavigation } from '@react-navigation/native';
 
 const DashboardScreen = () => {
-  const { userProfile, isLoading, error, fetchUserProfile } = useGamiSDK();
+  const { userProfile, isLoading: sdkLoading, error: sdkError, fetchUserProfile } = useGamiSDK();
   const { user } = useAuth();
+  const { balances, totalPoints, isLoading: pointsLoading, error: pointsError, fetchBalances, shadowAccounts, fetchShadowAccounts } = usePoints();
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchUserProfile();
+    fetchBalances();
+    fetchShadowAccounts();
   }, []);
 
   const renderXPBar = () => {
@@ -110,6 +117,9 @@ const DashboardScreen = () => {
     );
   };
 
+  const isLoading = sdkLoading || pointsLoading;
+  const error = sdkError || pointsError;
+
   if (isLoading && !userProfile) {
     return (
       <View style={styles.loadingContainer}>
@@ -124,7 +134,11 @@ const DashboardScreen = () => {
         <Text style={styles.errorText}>Error: {error}</Text>
         <TouchableOpacity 
           style={styles.retryButton} 
-          onPress={fetchUserProfile}
+          onPress={() => {
+            fetchUserProfile();
+            fetchBalances();
+            fetchShadowAccounts();
+          }}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -172,6 +186,61 @@ const DashboardScreen = () => {
         </View>
         <View style={styles.sectionContent}>
           {renderRecentAchievements()}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Points Balances</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Rewards')}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.sectionContent}>
+          {balances.length > 0 ? (
+            <>
+              <View style={styles.totalPointsContainer}>
+                <Text style={styles.totalPointsLabel}>Total Points</Text>
+                <Text style={styles.totalPointsValue}>{totalPoints}</Text>
+              </View>
+              
+              {balances.slice(0, 2).map((balance) => (
+                <View key={balance.partnerId} style={styles.pointsItem}>
+                  <View style={styles.pointsIcon}>
+                    {balance.logoUrl ? (
+                      <Image source={{ uri: balance.logoUrl }} style={styles.partnerLogo} />
+                    ) : (
+                      <Text style={styles.pointsIconText}>
+                        {balance.partnerName.substring(0, 1).toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.pointsDetails}>
+                    <Text style={styles.partnerName}>{balance.partnerName}</Text>
+                    <Text style={styles.pointsBalance}>{balance.balance} points</Text>
+                  </View>
+                </View>
+              ))}
+              
+              {shadowAccounts.length > 0 && (
+                <View style={styles.shadowNoticeContainer}>
+                  <Text style={styles.shadowNoticeText}>
+                    You have {shadowAccounts.length} pending claim{shadowAccounts.length !== 1 ? 's' : ''}
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.claimButton}
+                    onPress={() => navigation.navigate('Rewards')}
+                  >
+                    <Text style={styles.claimButtonText}>Claim Now</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No points balances yet</Text>
+            </View>
+          )}
         </View>
       </View>
 
