@@ -15,9 +15,8 @@ import {
 } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import QRCode from 'qrcode';
-
-// Use a type that matches the expected JSON type
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+// Directly import the jsonb type from drizzle-orm
+import { jsonb } from 'drizzle-orm/pg-core';
 
 /**
  * QR code formats that can be generated
@@ -127,7 +126,9 @@ export class EcommerceService {
     
     // Generate QR code and deep link
     const qrCode = await this.generateQRCode(universalId);
-    const deepLink = this.generateDeepLink(universalId, partner.deepLinkUrl);
+    // Convert null to undefined for type compatibility
+    const deepLinkUrl = partner.deepLinkUrl === null ? undefined : partner.deepLinkUrl;
+    const deepLink = this.generateDeepLink(universalId, deepLinkUrl);
     
     // Update the customer record with QR code and deep link
     const [updatedCustomer] = await db
@@ -252,7 +253,7 @@ export class EcommerceService {
       externalCustomerId,
       points,
       transactionType,
-      metadata: metadata as Json
+      metadata
     };
     
     const [transaction] = await db
@@ -315,7 +316,7 @@ export class EcommerceService {
       points: -points, // Negative for redemption
       transactionType: TransactionType.REDEEM,
       purpose,
-      metadata: metadata as Json
+      metadata
     };
     
     const [transaction] = await db

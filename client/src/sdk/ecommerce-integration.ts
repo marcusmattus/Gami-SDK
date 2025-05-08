@@ -1,13 +1,26 @@
-import { configureApi, apiRequest } from './api';
-import { GamiError } from './types';
+/**
+ * @fileoverview E-commerce Integration SDK
+ * This SDK provides methods for integrating with Gami Protocol for e-commerce partners.
+ * It supports partner registration, customer onboarding, and points management.
+ */
+
+import { apiRequest } from '../lib/queryClient';
 
 /**
- * Partner onboarding parameters
+ * Transaction type for points transactions
  */
-export interface PartnerOnboardingConfig {
-  partnerApiKey: string;
-  partnerId: string;
+export enum TransactionType {
+  AWARD = 'award',
+  REDEEM = 'redeem'
+}
+
+/**
+ * Partner registration data
+ */
+export interface PartnerRegistrationData {
+  partnerId?: string;
   partnerName: string;
+  partnerApiKey?: string;
   deepLinkUrl?: string;
   redirectUrl?: string;
   oauthCallbackUrl?: string;
@@ -18,26 +31,38 @@ export interface PartnerOnboardingConfig {
 }
 
 /**
- * Customer data for onboarding
+ * Customer onboarding data
  */
-export interface CustomerData {
+export interface CustomerOnboardingData {
+  partnerId: string;
   externalCustomerId: string;
+  name?: string;
   email?: string;
   phone?: string;
-  name?: string;
+  walletPublicKey?: string;
   metadata?: Record<string, any>;
 }
 
 /**
- * Response from customer onboarding
+ * Award points data
  */
-export interface OnboardingResponse {
-  success: boolean;
-  customerId?: string;
-  universalId?: string; 
-  qrCode?: string;
-  deepLink?: string;
-  error?: GamiError;
+export interface AwardPointsData {
+  partnerId: string;
+  externalCustomerId: string;
+  points: number;
+  transactionType?: TransactionType;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Redeem points data
+ */
+export interface RedeemPointsData {
+  partnerId: string;
+  externalCustomerId: string;
+  points: number;
+  purpose: string;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -46,275 +71,151 @@ export interface OnboardingResponse {
 export type QRFormat = 'svg' | 'png' | 'dataUrl';
 
 /**
- * Points transfer response
- */
-export interface PointsTransferResponse {
-  success: boolean;
-  transferId?: string;
-  pointsAmount?: number;
-  error?: GamiError;
-}
-
-/**
- * E-commerce integration module for Gami Protocol
- * This module handles partner business integrations and customer onboarding
+ * E-commerce Integration SDK
  */
 export class EcommerceIntegration {
-  private partnerConfig: PartnerOnboardingConfig | null = null;
+  private apiKey: string;
   
   /**
-   * Initialize the e-commerce integration module
+   * Create a new instance of the E-commerce Integration SDK
+   * @param apiKey API key for authentication
+   */
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+  
+  /**
+   * Alternative constructor for use with GamiSDK
    * @param apiUrl Base API URL
-   * @param apiKey API key
+   * @param apiKey API key for authentication
    */
-  constructor(apiUrl: string, apiKey: string) {
-    // Configure the API module for this instance
-    configureApi(apiUrl, apiKey);
+  static create(apiUrl: string, apiKey: string): EcommerceIntegration {
+    const instance = new EcommerceIntegration(apiKey);
+    return instance;
   }
   
   /**
-   * Register partner business configuration
-   * @param config Partner configuration
-   * @returns Promise with success status
+   * Register a new partner business
+   * @param data Partner registration data
+   * @returns Partner registration response
    */
-  async registerPartner(config: PartnerOnboardingConfig): Promise<boolean> {
-    try {
-      const response = await apiRequest('POST', '/partner/register', config);
-      const data = await response.json();
-      
-      if (data.success) {
-        this.partnerConfig = config;
-        return true;
+  async registerPartner(data: PartnerRegistrationData) {
+    const response = await apiRequest('POST', '/api/partner/register', data, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      return false;
-    } catch (error) {
-      console.error('Failed to register partner:', error);
-      return false;
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Onboard a customer to the Gami Protocol
-   * @param customerData Customer information
-   * @returns Onboarding result with universal ID
+   * Onboard a new customer from a partner
+   * @param data Customer onboarding data
+   * @returns Customer onboarding response with QR code and deep link
    */
-  async onboardCustomer(customerData: CustomerData): Promise<OnboardingResponse> {
-    try {
-      if (!this.partnerConfig) {
-        return {
-          success: false,
-          error: {
-            code: 'PARTNER_NOT_REGISTERED',
-            message: 'Partner not registered. Call registerPartner first.'
-          }
-        };
+  async onboardCustomer(data: CustomerOnboardingData) {
+    const response = await apiRequest('POST', '/api/customer/onboard', data, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      const payload = {
-        ...customerData,
-        partnerId: this.partnerConfig.partnerId
-      };
-      
-      const response = await apiRequest('POST', '/customer/onboard', payload);
-      const data = await response.json();
-      
-      return data;
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'ONBOARDING_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to onboard customer'
-        }
-      };
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Generate QR code for existing customer
+   * Generate a QR code for customer onboarding
    * @param universalId Universal customer ID
-   * @param format QR code format
+   * @param format QR code format (svg, png, dataUrl)
    * @returns QR code data
    */
-  async generateCustomerQR(universalId: string, format: QRFormat = 'svg'): Promise<string | null> {
-    try {
-      const response = await apiRequest('GET', `/customer/${universalId}/qr?format=${format}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        return data.qrCode;
+  async generateQRCode(universalId: string, format: QRFormat = 'svg') {
+    const response = await apiRequest('GET', `/api/customer/${universalId}/qr?format=${format}`, null, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      return null;
-    } catch (error) {
-      console.error('Failed to generate QR code:', error);
-      return null;
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Get onboarding deep link for mobile app
+   * Generate a deep link for the mobile app
    * @param universalId Universal customer ID
    * @returns Deep link URL
    */
-  async getDeepLink(universalId: string): Promise<string | null> {
-    try {
-      const response = await apiRequest('GET', `/customer/${universalId}/deeplink`);
-      const data = await response.json();
-      
-      if (data.success) {
-        return data.deepLink;
+  async generateDeepLink(universalId: string) {
+    const response = await apiRequest('GET', `/api/customer/${universalId}/deeplink`, null, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      return null;
-    } catch (error) {
-      console.error('Failed to generate deep link:', error);
-      return null;
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Transfer points from partner to customer
-   * @param externalCustomerId External customer ID
-   * @param points Amount of points to transfer
-   * @param transactionType Transaction type (purchase, reward, referral, etc.)
-   * @param metadata Additional transaction data
-   * @returns Points transfer result
+   * Award points to a customer
+   * @param data Award points data
+   * @returns Transaction response with updated balance
    */
-  async awardPoints(
-    externalCustomerId: string,
-    points: number,
-    transactionType: string,
-    metadata?: Record<string, any>
-  ): Promise<PointsTransferResponse> {
-    try {
-      if (!this.partnerConfig) {
-        return {
-          success: false,
-          error: {
-            code: 'PARTNER_NOT_REGISTERED',
-            message: 'Partner not registered. Call registerPartner first.'
-          }
-        };
+  async awardPoints(data: AwardPointsData) {
+    const response = await apiRequest('POST', '/api/points/award', data, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      const payload = {
-        externalCustomerId,
-        partnerId: this.partnerConfig.partnerId,
-        points,
-        transactionType,
-        metadata
-      };
-      
-      const response = await apiRequest('POST', '/points/award', payload);
-      const data = await response.json();
-      
-      return data;
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'POINTS_TRANSFER_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to award points'
-        }
-      };
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Redeem points from customer's universal balance
-   * @param externalCustomerId External customer ID
-   * @param points Amount of points to redeem
-   * @param purpose Purpose of redemption 
-   * @param metadata Additional redemption data
-   * @returns Points redemption result
+   * Redeem points from a customer's balance
+   * @param data Redeem points data
+   * @returns Transaction response with updated balance
    */
-  async redeemPoints(
-    externalCustomerId: string,
-    points: number,
-    purpose: string,
-    metadata?: Record<string, any>
-  ): Promise<PointsTransferResponse> {
-    try {
-      if (!this.partnerConfig) {
-        return {
-          success: false,
-          error: {
-            code: 'PARTNER_NOT_REGISTERED',
-            message: 'Partner not registered. Call registerPartner first.'
-          }
-        };
+  async redeemPoints(data: RedeemPointsData) {
+    const response = await apiRequest('POST', '/api/points/redeem', data, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      const payload = {
-        externalCustomerId,
-        partnerId: this.partnerConfig.partnerId,
-        points,
-        purpose,
-        metadata
-      };
-      
-      const response = await apiRequest('POST', '/points/redeem', payload);
-      const data = await response.json();
-      
-      return data;
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'POINTS_REDEMPTION_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to redeem points'
-        }
-      };
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Get customer points balance
+   * Get a customer's points balance
    * @param externalCustomerId External customer ID
+   * @param partnerId Partner ID
    * @returns Current points balance
    */
-  async getCustomerBalance(externalCustomerId: string): Promise<number | null> {
-    try {
-      if (!this.partnerConfig) {
-        console.error('Partner not registered. Call registerPartner first.');
-        return null;
+  async getCustomerBalance(externalCustomerId: string, partnerId: string) {
+    const response = await apiRequest('GET', `/api/customer/balance?externalCustomerId=${encodeURIComponent(externalCustomerId)}&partnerId=${encodeURIComponent(partnerId)}`, null, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      const response = await apiRequest('GET', `/customer/balance?externalCustomerId=${externalCustomerId}&partnerId=${this.partnerConfig.partnerId}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        return data.balance;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Failed to get customer balance:', error);
-      return null;
-    }
+    });
+    
+    return await response.json();
   }
   
   /**
-   * Check if customer exists in the universal system
+   * Check if a customer exists
    * @param externalCustomerId External customer ID
+   * @param partnerId Partner ID
    * @returns Whether the customer exists
    */
-  async customerExists(externalCustomerId: string): Promise<boolean> {
-    try {
-      if (!this.partnerConfig) {
-        console.error('Partner not registered. Call registerPartner first.');
-        return false;
+  async customerExists(externalCustomerId: string, partnerId: string) {
+    const response = await apiRequest('GET', `/api/customer/exists?externalCustomerId=${encodeURIComponent(externalCustomerId)}&partnerId=${encodeURIComponent(partnerId)}`, null, {
+      headers: {
+        'X-API-Key': this.apiKey
       }
-      
-      const response = await apiRequest('GET', `/customer/exists?externalCustomerId=${externalCustomerId}&partnerId=${this.partnerConfig.partnerId}`);
-      const data = await response.json();
-      
-      return data.exists === true;
-    } catch (error) {
-      console.error('Failed to check customer:', error);
-      return false;
-    }
+    });
+    
+    return await response.json();
   }
 }
+
+export default EcommerceIntegration;

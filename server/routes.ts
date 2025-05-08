@@ -937,7 +937,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const partner = await ecommerceService.getPartnerById(customer.partnerId);
-      const deepLink = ecommerceService.generateDeepLink(universalId, partner?.deepLinkUrl);
+      // Convert null to undefined for type compatibility
+      const deepLinkUrl = partner?.deepLinkUrl === null ? undefined : partner?.deepLinkUrl;
+      const deepLink = ecommerceService.generateDeepLink(universalId, deepLinkUrl);
       
       res.status(200).json({
         success: true,

@@ -5,9 +5,12 @@ import { CrossChainTransfer, CrossChainTransferParams, ChainType } from './cross
 import { WalrusStorage, WalrusStorageConfig, StoreOptions } from './walrus-storage';
 import { 
   EcommerceIntegration, 
-  PartnerOnboardingConfig, 
-  CustomerData,
-  QRFormat
+  PartnerRegistrationData, 
+  CustomerOnboardingData,
+  AwardPointsData,
+  RedeemPointsData,
+  QRFormat,
+  TransactionType
 } from './ecommerce-integration';
 import * as gamification from './gamification';
 
