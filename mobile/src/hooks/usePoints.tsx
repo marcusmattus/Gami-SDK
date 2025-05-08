@@ -56,6 +56,14 @@ export interface ClaimCodeValidation {
   errorMessage?: string;
 }
 
+// Define redemption request
+export interface RedemptionRequest {
+  partnerId: string;
+  amount: number;
+  redemptionItem?: string;
+  walletPublicKey?: string;
+}
+
 // Define the points context type
 interface PointsContextType {
   isLoading: boolean;
@@ -72,6 +80,7 @@ interface PointsContextType {
   validateClaimCode: (claimCode: string) => Promise<ClaimCodeValidation>;
   activateClaimCode: (claimCode: string, walletPublicKey: string) => Promise<boolean>;
   fetchShadowAccounts: () => Promise<void>;
+  redeemPoints: (request: RedemptionRequest) => Promise<boolean>;
 }
 
 // Create the context
@@ -298,6 +307,46 @@ export const PointsProvider = ({ children }: PointsProviderProps) => {
     }
   };
 
+  // Redeem points
+  const redeemPoints = async (request: RedemptionRequest): Promise<boolean> => {
+    if (!user || !isInitialized) {
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${config.apiUrl}/points/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': config.apiKey,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          ...request
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to redeem points');
+      }
+
+      // Refresh data
+      await fetchBalances();
+      await fetchTransactions();
+      
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to redeem points');
+      console.error('Redeem points error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     isLoading,
     error,
@@ -312,6 +361,7 @@ export const PointsProvider = ({ children }: PointsProviderProps) => {
     validateClaimCode,
     activateClaimCode,
     fetchShadowAccounts,
+    redeemPoints,
   };
 
   return <PointsContext.Provider value={value}>{children}</PointsContext.Provider>;

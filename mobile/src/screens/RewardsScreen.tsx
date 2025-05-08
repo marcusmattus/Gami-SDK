@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { usePoints, PointsTransaction, PointsBalance, ShadowAccountInfo } from '../hooks/usePoints';
+import { usePoints, PointsTransaction, PointsBalance, ShadowAccountInfo, RedemptionRequest } from '../hooks/usePoints';
 import { useGamiSDK } from '../hooks/useGamiSDK';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -30,12 +32,18 @@ const RewardsScreen = () => {
     fetchShadowAccounts,
     validateClaimCode,
     activateClaimCode,
+    redeemPoints,
   } = usePoints();
   const { wallets } = useGamiSDK();
   const [claimCodeInput, setClaimCodeInput] = useState('');
   const [isClaimModalVisible, setIsClaimModalVisible] = useState(false);
+  const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
   const [selectedShadowAccount, setSelectedShadowAccount] = useState<ShadowAccountInfo | null>(null);
+  const [selectedBalance, setSelectedBalance] = useState<PointsBalance | null>(null);
+  const [redeemAmount, setRedeemAmount] = useState('');
+  const [redeemItem, setRedeemItem] = useState('');
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'claim'>('balances');
 
   // Load data when screen is focused
@@ -112,9 +120,81 @@ const RewardsScreen = () => {
     }
   };
 
+  // Handle redemption of points
+  const handleRedeemPoints = async () => {
+    if (!selectedBalance || !redeemAmount) {
+      Alert.alert('Error', 'Please select a partner and enter an amount');
+      return;
+    }
+
+    const amount = parseInt(redeemAmount, 10);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+
+    if (amount > selectedBalance.balance) {
+      Alert.alert('Error', 'You do not have enough points');
+      return;
+    }
+
+    if (wallets.length === 0) {
+      Alert.alert(
+        'No Wallet Found',
+        'Please connect a wallet in the Wallet tab before redeeming points'
+      );
+      return;
+    }
+
+    const wallet = wallets[0]; // Use the first wallet for simplicity
+    
+    setIsRedeeming(true);
+
+    try {
+      const request: RedemptionRequest = {
+        partnerId: selectedBalance.partnerId,
+        amount: amount,
+        redemptionItem: redeemItem || undefined,
+        walletPublicKey: wallet.publicKey
+      };
+
+      const success = await redeemPoints(request);
+
+      if (success) {
+        Alert.alert(
+          'Success',
+          `You've successfully redeemed ${amount} points from ${selectedBalance.partnerName}`
+        );
+        setIsRedeemModalVisible(false);
+        setSelectedBalance(null);
+        setRedeemAmount('');
+        setRedeemItem('');
+        
+        // Refresh data
+        fetchBalances();
+        fetchTransactions();
+      } else {
+        Alert.alert('Error', 'Failed to redeem points');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to redeem points');
+      console.error(err);
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
   // Render points balance item
   const renderBalanceItem = ({ item }: { item: PointsBalance }) => (
-    <View style={styles.balanceItem}>
+    <TouchableOpacity 
+      style={styles.balanceItem}
+      onPress={() => {
+        setSelectedBalance(item);
+        setRedeemAmount('');
+        setRedeemItem('');
+        setIsRedeemModalVisible(true);
+      }}
+    >
       {item.logoUrl ? (
         <Image source={{ uri: item.logoUrl }} style={styles.partnerLogo} />
       ) : (
@@ -128,8 +208,11 @@ const RewardsScreen = () => {
         <Text style={styles.partnerName}>{item.partnerName}</Text>
         <Text style={styles.pointsBalance}>{item.balance} points</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#7631f9" />
-    </View>
+      <View style={styles.balanceActions}>
+        <Text style={styles.redeemText}>Redeem</Text>
+        <Ionicons name="chevron-forward" size={20} color="#7631f9" />
+      </View>
+    </TouchableOpacity>
   );
 
   // Render transaction item
